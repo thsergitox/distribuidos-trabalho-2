@@ -1,0 +1,5 @@
+fastapi[standard]==0.121.2
+pydantic==2.8.0
+grpcio==1.76.0
+grpcio-tools==1.76.0
+requests

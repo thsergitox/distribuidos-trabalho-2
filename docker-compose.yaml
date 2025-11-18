@@ -1,0 +1,14 @@
+services:
+  app:
+    image: app_image
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "8080-8100:80"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
