@@ -1,15 +1,15 @@
 """
-Implementación del Reloj Lógico de Lamport
+Implementação do Relógio Lógico de Lamport
 
-El Reloj Lógico de Lamport es un mecanismo para ordenar eventos en sistemas distribuidos
-sin necesidad de sincronización de relojes físicos.
+O Relógio Lógico de Lamport é um mecanismo para ordenar eventos em sistemas distribuídos
+sem necessidade de sincronização de relógios físicos.
 
-Propiedades:
-1. Si evento A → B (A causalmente precede a B), entonces Lamport(A) < Lamport(B)
-2. El reloj se incrementa antes de cada evento local
-3. Al recibir un mensaje, el reloj se actualiza: max(local, remote) + 1
+Propriedades:
+1. Se evento A → B (A causalmente precede a B), então Lamport(A) < Lamport(B)
+2. O relógio se incrementa antes de cada evento local
+3. Ao receber uma mensagem, o relógio se atualiza: max(local, remote) + 1
 
-Referencias:
+Referências:
 - Lamport, L. (1978). "Time, Clocks, and the Ordering of Events in a Distributed System"
 """
 
@@ -18,33 +18,33 @@ import threading
 
 class LamportClock:
     """
-    Reloj Lógico de Lamport thread-safe
+    Relógio Lógico de Lamport thread-safe
 
     Attributes:
-        time (int): Valor actual del reloj lógico
-        lock (threading.Lock): Lock para garantizar thread-safety
+        time (int): Valor atual do relógio lógico
+        lock (threading.Lock): Lock para garantir thread-safety
     """
 
     def __init__(self, initial_time: int = 0):
         """
-        Inicializa el reloj lógico
+        Inicializa o relógio lógico
 
         Args:
-            initial_time: Valor inicial del reloj (por defecto 0)
+            initial_time: Valor inicial do relógio (por padrão 0)
         """
         self.time = initial_time
         self.lock = threading.Lock()
 
     def increment(self) -> int:
         """
-        Incrementa el reloj local antes de un evento local (ej: enviar mensaje)
+        Incrementa o relógio local antes de um evento local (ex: enviar mensagem)
 
-        Este método debe llamarse ANTES de:
-        - Enviar un mensaje a otro nodo
-        - Realizar cualquier acción que pueda causar eventos en otros nodos
+        Este método deve ser chamado ANTES de:
+        - Enviar uma mensagem a outro nó
+        - Realizar qualquer ação que possa causar eventos em outros nós
 
         Returns:
-            int: Nuevo valor del reloj después del incremento
+            int: Novo valor do relógio depois do incremento
 
         Example:
             >>> clock = LamportClock()
@@ -57,25 +57,25 @@ class LamportClock:
 
     def update(self, remote_time: int) -> int:
         """
-        Actualiza el reloj al recibir un mensaje de otro nodo
+        Atualiza o relógio ao receber uma mensagem de outro nó
 
-        Implementa la regla de Lamport:
+        Implementa a regra de Lamport:
             local_time = max(local_time, remote_time) + 1
 
-        Este método debe llamarse al RECIBIR un mensaje que incluye
-        el timestamp del nodo remoto.
+        Este método deve ser chamado ao RECEBER uma mensagem que inclui
+        o timestamp do nó remoto.
 
         Args:
-            remote_time: Timestamp Lamport del mensaje recibido
+            remote_time: Timestamp Lamport da mensagem recebida
 
         Returns:
-            int: Nuevo valor del reloj local después de la actualización
+            int: Novo valor do relógio local depois da atualização
 
         Example:
             >>> clock = LamportClock()
-            >>> # Recibimos mensaje con timestamp 10
+            >>> # Recebemos mensagem com timestamp 10
             >>> new_time = clock.update(10)  # Retorna 11
-            >>> # Si recibimos otro con timestamp 5
+            >>> # Se recebemos outro com timestamp 5
             >>> new_time = clock.update(5)   # Retorna 12 (max(11, 5) + 1)
         """
         with self.lock:
@@ -84,15 +84,15 @@ class LamportClock:
 
     def get_time(self) -> int:
         """
-        Obtiene el valor actual del reloj sin modificarlo
+        Obtém o valor atual do relógio sem modificá-lo
 
         Útil para:
         - Debugging
-        - Mostrar en dashboards
+        - Mostrar em dashboards
         - Logging
 
         Returns:
-            int: Valor actual del reloj
+            int: Valor atual do relógio
 
         Example:
             >>> clock = LamportClock()
@@ -103,9 +103,9 @@ class LamportClock:
             return self.time
 
     def __str__(self) -> str:
-        """Representación en string del reloj"""
+        """Representação em string do relógio"""
         return f"LamportClock(time={self.get_time()})"
 
     def __repr__(self) -> str:
-        """Representación para debugging"""
+        """Representação para debugging"""
         return self.__str__()

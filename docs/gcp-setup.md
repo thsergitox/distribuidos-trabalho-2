@@ -1,12 +1,12 @@
-# Guía de Setup Google Cloud Platform (GCP)
+# Guia de Setup Google Cloud Platform (GCP)
 
-## Paso 1: Verificar si gcloud está instalado
+## Passo 1: Verificar se gcloud está instalado
 
 ```bash
 gcloud --version
 ```
 
-Si NO está instalado, instalar:
+Se NÃO estiver instalado, instalar:
 
 ```bash
 # Para Linux (Debian/Ubuntu)
@@ -15,47 +15,47 @@ exec -l $SHELL
 gcloud init
 ```
 
-## Paso 2: Autenticación
+## Passo 2: Autenticação
 
 ```bash
-# Esto abrirá un navegador para login con tu cuenta Google
+# Isso abrirá um navegador para login com sua conta Google
 gcloud auth login
 ```
 
-## Paso 3: Crear/Seleccionar Proyecto
+## Passo 3: Criar/Selecionar Projeto
 
 ```bash
-# Listar proyectos existentes
+# Listar projetos existentes
 gcloud projects list
 
-# O crear uno nuevo
+# Ou criar um novo
 gcloud projects create distributed-log-$(date +%s) --name="Distributed Log System"
 
-# Configurar proyecto activo
+# Configurar projeto ativo
 gcloud config set project PROJECT_ID_AQUI
 ```
 
-## Paso 4: Habilitar APIs necesarias
+## Passo 4: Habilitar APIs necessárias
 
 ```bash
 # Habilitar Compute Engine API
 gcloud services enable compute.googleapis.com
 
-# Habilitar Artifact Registry API (para Docker images)
+# Habilitar Artifact Registry API (para imagens Docker)
 gcloud services enable artifactregistry.googleapis.com
 
-# Habilitar Container Registry API (legacy, pero aún necesario)
+# Habilitar Container Registry API (legacy, mas ainda necessário)
 gcloud services enable containerregistry.googleapis.com
 ```
 
-## Paso 5: Configurar región por defecto
+## Passo 5: Configurar região por padrão
 
 ```bash
 gcloud config set compute/region us-central1
 gcloud config set compute/zone us-central1-a
 ```
 
-## Paso 6: Verificar credenciales
+## Passo 6: Verificar credenciais
 
 ```bash
 gcloud auth list
@@ -64,23 +64,23 @@ gcloud config list
 
 ## Notas Importantes
 
-- **Costo:** Las VMs e2-micro pueden entrar en free tier (750 horas/mes gratis)
-- **Región:** us-central1 (Iowa) suele ser la más barata
-- **Firewall:** Necesitaremos crear reglas para puertos 80, 443, 8000-8100
-- **Billing:** Asegúrate de tener billing habilitado en tu proyecto
+- **Custo:** As VMs e2-micro podem entrar no free tier (750 horas/mês grátis)
+- **Região:** us-central1 (Iowa) costuma ser a mais barata
+- **Firewall:** Precisaremos criar regras para portas 80, 443, 8000-8100
+- **Billing:** Certifique-se de ter billing habilitado no seu projeto
 
-## Variables que necesitaremos
+## Variáveis que precisaremos
 
 ```bash
-# Exportar para usar en scripts
-export GCP_PROJECT_ID="tu-project-id-aqui"
+# Exportar para usar em scripts
+export GCP_PROJECT_ID="seu-project-id-aqui"
 export GCP_REGION="us-central1"
 ```
 
-## Comando Rápido para Todo
+## Comando Rápido para Tudo
 
 ```bash
-# Guardar en ~/.bashrc para persistencia
-echo 'export GCP_PROJECT_ID="tu-project-id"' >> ~/.bashrc
+# Salvar no ~/.bashrc para persistência
+echo 'export GCP_PROJECT_ID="seu-project-id"' >> ~/.bashrc
 source ~/.bashrc
 ```

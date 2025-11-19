@@ -1,103 +1,103 @@
-# 🎯 PLAN DETALLADO COMPLETO - Proyecto Sistemas Distribuidos
+# 🎯 PLANO DETALHADO COMPLETO - Projeto Sistemas Distribuídos
 
-## Sistema: Log/Mensajería Distribuido con Ordenación Causal y Elección de Líder
+## Sistema: Log/Mensageria Distribuído com Ordenação Causal e Eleição de Líder
 
 ---
 
-## 📊 RESUMEN EJECUTIVO
+## 📊 RESUMO EXECUTIVO
 
-### ¿Qué es este sistema? (Explicación para cualquier persona)
+### O que é este sistema? (Explicação para qualquer pessoa)
 
-Imagina que tienes un **chat grupal** donde varias personas pueden enviar mensajes al mismo tiempo desde diferentes lugares del mundo. El problema es: **¿cómo garantizamos que todos vean los mensajes en el mismo orden?**
+Imagine que você tem um **chat em grupo** onde várias pessoas podem enviar mensagens ao mesmo tempo de diferentes lugares do mundo. El problema es: **como garantimos que todos vejam as mensagens na mesma ordem?**
 
-**El Problema:**
+**O Problema:**
 - Juan en México envía: "Hola"
 - María en España envía: "¿Cómo están?"
 - Pedro en Japón envía: "Buenos días"
 
-Si no hay coordinación, cada persona podría ver los mensajes en orden diferente:
+Se não houver coordenação, cada pessoa poderia ver as mensagens em ordem diferente:
 - Juan ve: Hola → Buenos días → ¿Cómo están?
 - María ve: ¿Cómo están? → Hola → Buenos días
 - Pedro ve: Buenos días → Hola → ¿Cómo están?
 
-**Esto es un DESASTRE** en sistemas distribuidos porque:
-- Una conversación pierde sentido
-- Un sistema bancario podría procesar transacciones en orden incorrecto
-- Un sistema de logs podría registrar eventos fuera de secuencia
+**Isso é um DESASTRE** em sistemas distribuídos porque:
+- Uma conversa perde o sentido
+- Um sistema bancário poderia processar transações na ordem incorreta
+- Um sistema de logs poderia registrar eventos fora de sequência
 
-**Nuestra Solución:**
+**Nossa Solução:**
 
-Este proyecto implementa un **sistema de log distribuido** que garantiza que todos los nodos (servidores) vean los mensajes en el MISMO orden, incluso si están en diferentes países y la red tiene retrasos.
+Este projeto implementa um **sistema de log distribuído** que garante que todos os nodos (servidores) vean los mensagems en el MISMO orden, mesmo se estiverem em países diferentes e a rede tiver atrasos.
 
-**¿Cómo lo logramos?**
+**Como conseguimos isso?**
 
-1. **Reloj Lógico de Lamport:**
-   - Cada mensaje recibe un "número de orden" (timestamp)
-   - NO usamos la hora del reloj (que puede estar desincronizada)
-   - Usamos un contador lógico que SIEMPRE crece
-   - Ejemplo: mensaje 1 → timestamp 10, mensaje 2 → timestamp 11, etc.
+1. **Relógio Lógico de Lamport:**
+   - Cada mensagem recebe um "número de ordem" (timestamp)
+   - NÃO usamos a hora do relógio (que pode estar dessincronizada)
+   - Usamos um contador lógico que SEMPRE cresce
+   - Exemplo: mensagem 1 → timestamp 10, mensagem 2 → timestamp 11, etc.
 
-2. **Algoritmo Bully (Elección de Líder):**
-   - Uno de los servidores es el "líder" que coordina todo
-   - Si el líder se cae, automáticamente se elige un nuevo líder
-   - El servidor con el ID más alto siempre es elegido
-   - Ejemplo: Si hay servidores 1, 2, 3 y el líder 3 cae → el servidor 2 se vuelve líder
+2. **Algoritmo Bully (Eleição de Líder):**
+   - Um dos servidores é o "líder" que coordena tudo
+   - Se o líder cai, automaticamente se elege um novo líder
+   - O servidor com o ID mais alto sempre é eleito
+   - Exemplo: Se há servidores 1, 2, 3 y el líder 3 cae → o servidor 2 se torna líder
 
-3. **Replicación:**
-   - Cuando el líder recibe un mensaje, lo envía a TODOS los demás servidores
-   - Todos los servidores guardan el mismo mensaje con el mismo timestamp
-   - Resultado: todos tienen la misma secuencia ordenada de mensajes
+3. **Replicação:**
+   - Cuando el líder recibe un mensagem, ele envia para TODOS os demais servidores
+   - Todos los servidores guardan el mismo mensagem com o mesmo timestamp
+   - Resultado: todos tienen la misma secuencia ordenada de mensagems
 
-**En la Práctica:**
+**Na Prática:**
 
-- Desplegamos 3 servidores en Google Cloud:
+- Deployamos 3 servidores no Google Cloud:
   - 1 en Estados Unidos (Iowa)
   - 1 en Europa (Bélgica)
-  - 1 en Asia (Taiwan)
+  - 1 en Ásia (Taiwan)
 
-- Un usuario puede enviar un mensaje a CUALQUIER servidor
-- El mensaje automáticamente se replica a todos
-- Todos los servidores mantienen el mismo orden de mensajes
-- Si un servidor falla, el sistema sigue funcionando con los otros 2
+- Um usuário pode enviar un mensagem a CUALQUIER servidor
+- El mensagem automaticamente se replica para todos
+- Todos los servidores mantêm a mesma ordem de mensagems
+- Si un servidor falla, o sistema continua funcionando com os outros 2
 
-**Casos de Uso Reales:**
+**Casos de Uso Reais:**
 
-- **Chat distribuido:** WhatsApp, Telegram (millones de usuarios simultáneos)
-- **Logs de aplicaciones:** Registrar eventos de múltiples servidores en orden
-- **Sistemas bancarios:** Procesar transacciones en el orden correcto
-- **Blockchains:** Ordenar transacciones de forma consistente
+- **Chat distribuído:** WhatsApp, Telegram (milhões de usuários simultâneos)
+- **Logs de aplicações:** Registrar eventos de múltiplos servidores em ordem
+- **Sistemas bancários:** Processar transações na ordem correta
+- **Blockchains:** Ordenar transações de forma consistente
 
-**Tecnologías Usadas:**
-- Python con FastAPI (para crear la API REST)
-- Docker (para empaquetar la aplicación)
-- Google Cloud Platform (para desplegar en la nube)
-- HTML/CSS/JavaScript (para el dashboard de monitoreo)
+**Tecnologias Usadas:**
+- Python con FastAPI (para criar a API REST)
+- Docker (para empacotar a aplicação)
+- Google Cloud Platform (para deploy na nuvem)
+- HTML/CSS/JavaScript (para o dashboard de monitoramento)
 
 ---
 
 ### Algoritmos a Implementar:
-1. **Reloj Lógico de Lamport** - Ordenación causal de mensajes
-2. **Algoritmo Bully** - Elección de líder (ya implementado, mejorar)
-3. **Replicación Single-Leader** - Propagación de logs
+1. **Reloj Lógico de Lamport** - Ordenación causal de mensagems
+2. **Algoritmo Bully** - Elección de líder (já implementado, melhorar)
+3. **Replicación Single-Leader** - Propagação de logs
 
 ### Stack Tecnológico:
 - **Backend:** FastAPI + Python 3.9
 - **Comunicación:** HTTP/REST + gRPC (opcional)
 - **Containerización:** Docker
 - **Cloud:** Google Cloud Platform (3 VMs en 3 regiones)
-- **Monitoreo:** Cloud Monitoring + Dashboard Web custom
+- **Monitoreo:** Cloud Monitoring + Dashboard Web customizado
 
-### Entregables:
-- ✅ Código fuente con instrucciones
+### Entregáveis:
+- ✅ Código fonte com instruções
 - ✅ Relatório IEEE (máx 6 páginas)
-- ✅ Video 5 minutos
-- ✅ Dashboard web en tiempo real
+- ✅ Vídeo 5 minutos
+- ✅ Dashboard web em tempo real
 
 ---
 
-# 📐 ARQUITECTURA DEL SISTEMA
+# 📐 ARQUITETURA DO SISTEMA
 
-## Diagrama General de Arquitectura
+## Diagrama Geral de Arquitetura
 
 ```mermaid
 graph TB
@@ -165,7 +165,7 @@ graph TB
 
 **Capa de Aplicación:**
 - Cada contenedor Docker ejecuta una instancia completa del sistema (FastAPI + Lamport + Bully)
-- Los nodos se replican mensajes entre sí usando HTTP POST
+- Los nodos se replican mensagems entre sí usando HTTP POST
 - Un nodo actúa como líder y coordina la replicación
 
 **Capa de Acceso:**
@@ -241,17 +241,17 @@ graph TB
 
 **FastAPI Application (main.py):**
 - Punto de entrada de la aplicación
-- Expone endpoints REST para recibir mensajes, consultar estado, etc.
+- Expone endpoints REST para recibir mensagems, consultar estado, etc.
 - Coordina todos los componentes internos
 
 **LamportClock:**
 - Mantiene el timestamp lógico del nodo
-- Se incrementa antes de cada evento local (envío de mensaje)
-- Se actualiza al recibir mensajes: `max(local, remote) + 1`
+- Se incrementa antes de cada evento local (envío de mensagem)
+- Se actualiza al recibir mensagems: `max(local, remote) + 1`
 - **Por qué es necesario:** Garantiza orden causal sin sincronización de relojes físicos
 
 **MetricsCollector:**
-- Rastrea estadísticas: mensajes enviados/recibidos, latencias, violaciones causales
+- Rastrea estadísticas: mensagems enviados/recibidos, latencias, violaciones causales
 - **Por qué es necesario:** Para validar que el sistema funciona correctamente y generar datos para el relatório
 
 **Bully Algorithm:**
@@ -261,9 +261,9 @@ graph TB
 - **Por qué es necesario:** Garantiza que siempre hay un líder para coordinar la replicación
 
 **Message Replicator:**
-- El líder replica mensajes a todos los followers
-- Incluye timestamp Lamport en cada mensaje
-- **Por qué es necesario:** Garantiza que todos los nodos tienen la misma secuencia de mensajes
+- El líder replica mensagems a todos los followers
+- Incluye timestamp Lamport en cada mensagem
+- **Por qué es necesario:** Garantiza que todos los nodos tienen la misma secuencia de mensagems
 
 **Storage (In-Memory):**
 - Messages: Lista ordenada por timestamp Lamport
@@ -311,7 +311,7 @@ sequenceDiagram
 
 ### Explicación Paso a Paso:
 
-1. **Cliente envía mensaje a cualquier nodo** (puede ser follower o líder)
+1. **Cliente envía mensagem a cualquier nodo** (puede ser follower o líder)
    - El cliente NO necesita saber quién es el líder
    - Simplifica la lógica del cliente
 
@@ -320,10 +320,10 @@ sequenceDiagram
    - Forward transparente para el cliente
 
 3. **El líder incrementa su reloj Lamport**
-   - **CRÍTICO:** Esto debe hacerse ANTES de crear el mensaje
-   - Garantiza que cada mensaje tiene un timestamp único y creciente
+   - **CRÍTICO:** Esto debe hacerse ANTES de crear el mensagem
+   - Garantiza que cada mensagem tiene un timestamp único y creciente
 
-4. **El líder crea el mensaje con el timestamp**
+4. **El líder crea el mensagem con el timestamp**
    - Message(id=10, lamport=43, node_id=8002, content="Hello")
    - El timestamp Lamport será el mismo en todos los nodos
 
@@ -335,13 +335,13 @@ sequenceDiagram
    - Regla: `lamport_time = max(local_time, remote_time) + 1`
    - Si follower tenía tiempo 30, ahora tendrá 44 (max(30, 43) + 1)
 
-7. **Cada follower almacena el mensaje y lo ordena**
+7. **Cada follower almacena el mensagem y lo ordena**
    - Ordenamiento por: `(lamport_timestamp, node_id)`
-   - El `node_id` se usa para desempatar si dos mensajes tienen el mismo timestamp
+   - El `node_id` se usa para desempatar si dos mensagems tienen el mismo timestamp
 
 8. **Resultado final: Todos los nodos tienen el mismo orden**
    - Gracias a Lamport, el orden causal está garantizado
-   - Si mensaje A → mensaje B (causalidad), entonces Lamport(A) < Lamport(B)
+   - Si mensagem A → mensagem B (causalidad), entonces Lamport(A) < Lamport(B)
 
 ---
 
@@ -423,7 +423,7 @@ sequenceDiagram
 **Propiedades Garantizadas:**
 - ✅ **Safety:** El nodo con mayor ID siempre será elegido líder
 - ✅ **Liveness:** Si hay nodos vivos, eventualmente habrá un líder
-- ❌ **Problema:** Durante la elección (3s), NO hay líder → sistema no acepta mensajes nuevos
+- ❌ **Problema:** Durante la elección (3s), NO hay líder → sistema no acepta mensagems nuevos
 
 ---
 
@@ -532,7 +532,7 @@ class LamportClock:
 
     def increment(self) -> int:
         """
-        Incrementa el reloj local antes de enviar un mensaje
+        Incrementa el reloj local antes de enviar un mensagem
         Returns: nuevo valor del reloj
         """
         with self.lock:
@@ -541,11 +541,11 @@ class LamportClock:
 
     def update(self, remote_time: int) -> int:
         """
-        Actualiza el reloj al recibir un mensaje
+        Actualiza el reloj al recibir un mensagem
         Regla: time = max(local_time, remote_time) + 1
 
         Args:
-            remote_time: timestamp Lamport del mensaje recibido
+            remote_time: timestamp Lamport del mensagem recibido
         Returns: nuevo valor del reloj local
         """
         with self.lock:
@@ -594,12 +594,12 @@ class Message(BaseModel):
 @app.post("/")
 async def post(message: str):
     """
-    Endpoint para crear un nuevo mensaje
+    Endpoint para crear un nuevo mensagem
 
     Flujo:
-    1. Incrementar reloj Lamport ANTES de crear mensaje
+    1. Incrementar reloj Lamport ANTES de crear mensagem
     2. Si no soy líder, reenviar al líder
-    3. Crear mensaje con timestamp
+    3. Crear mensagem con timestamp
     4. Replicar a todos los followers
     """
     global messages
@@ -623,7 +623,7 @@ async def post(message: str):
             logger.error(f"Leader not reachable: {e}")
             return {"error": "Leader not reachable"}, 503
 
-    # PASO 3: Crear mensaje (soy el líder)
+    # PASO 3: Crear mensagem (soy el líder)
     id = max(msg.id for msg in messages) + 1 if messages else 1
     new_msg = Message(
         id=id,
@@ -679,13 +679,13 @@ async def post(message: str):
 @app.post("/message_received")
 async def message_received(message: Message):
     """
-    Endpoint para recibir mensajes replicados desde el líder
+    Endpoint para recibir mensagems replicados desde el líder
 
     Flujo:
     1. Actualizar reloj Lamport con max(local, remote) + 1
     2. Verificar violaciones de causalidad
-    3. Guardar mensaje
-    4. Ordenar mensajes por Lamport
+    3. Guardar mensagem
+    4. Ordenar mensagems por Lamport
     """
     global messages, last_id
 
@@ -709,7 +709,7 @@ async def message_received(message: Message):
                 }
             )
 
-    # PASO 3: Guardar mensaje
+    # PASO 3: Guardar mensagem
     messages.append(message)
     last_id = max(msg.id for msg in messages)
 
@@ -777,12 +777,12 @@ class MetricsCollector:
         self.start_time = time.time()
 
     def record_message_sent(self):
-        """Incrementa contador de mensajes enviados"""
+        """Incrementa contador de mensagems enviados"""
         with self.lock:
             self.messages_sent += 1
 
     def record_message_received(self):
-        """Incrementa contador de mensajes recibidos"""
+        """Incrementa contador de mensagems recibidos"""
         with self.lock:
             self.messages_received += 1
 
@@ -1255,7 +1255,7 @@ async def startup_event():
             }
         }
 
-        // Actualizar tabla de mensajes cada 2 segundos
+        // Actualizar tabla de mensagems cada 2 segundos
         async function updateMessages() {
             try {
                 const response = await fetch(`${API_URL}/messages`);
@@ -1353,7 +1353,7 @@ async def dashboard():
 
 @app.get("/messages")
 async def get_all_messages():
-    """Retorna todos los mensajes ordenados por Lamport"""
+    """Retorna todos los mensagems ordenados por Lamport"""
     return sorted(messages, key=lambda m: (m.lamport_timestamp, m.node_id))
 
 @app.get("/lamport_time")
@@ -1867,7 +1867,7 @@ async def health_check():
 ```python
 #!/usr/bin/env python3
 """
-Test de concurrencia: envía N mensajes desde M clientes simultáneos
+Test de concurrencia: envía N mensagems desde M clientes simultáneos
 Mide: latencia, throughput, violaciones de causalidad
 """
 
@@ -1884,7 +1884,7 @@ NUM_MESSAGES = 100
 NUM_CLIENTS = 10
 
 def send_message(msg_id):
-    """Envía un mensaje y mide latencia"""
+    """Envía un mensagem y mide latencia"""
     start = time.time()
     try:
         response = requests.post(
@@ -1927,7 +1927,7 @@ def main():
     print(f"Concurrent clients: {NUM_CLIENTS}")
     print("-" * 60)
 
-    # Verificar que el servidor está accesible
+    # Verificar que o servidor está accesible
     try:
         health = requests.get(f"{LEADER_URL}/health", timeout=5)
         if health.status_code != 200:
@@ -1941,7 +1941,7 @@ def main():
     print(f"\nSending {NUM_MESSAGES} messages...")
     start_time = time.time()
 
-    # Enviar mensajes concurrentemente
+    # Enviar mensagems concurrentemente
     with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_CLIENTS) as executor:
         futures = [executor.submit(send_message, i) for i in range(NUM_MESSAGES)]
         results = [f.result() for f in concurrent.futures.as_completed(futures)]
@@ -1979,7 +1979,7 @@ def main():
 
     # Verificar violaciones de causalidad
     print(f"\nVerifying causality...")
-    time.sleep(2)  # Esperar a que se propaguen todos los mensajes
+    time.sleep(2)  # Esperar a que se propaguen todos los mensagems
 
     try:
         messages_response = requests.get(f"{LEADER_URL}/messages", timeout=10)
@@ -2157,7 +2157,7 @@ def main():
                 break
 
     if active_node:
-        # Intentar enviar mensaje
+        # Intentar enviar mensagem
         try:
             response = requests.post(
                 f"{active_node}/",
@@ -2341,12 +2341,12 @@ if __name__ == "__main__":
 ### Contexto
 Los sistemas distribuidos modernos requieren mecanismos robustos para mantener la
 consistencia de datos en presencia de concurrencia y falhas. En aplicaciones como
-chat distribuido, logging de eventos, y sistemas de mensajería, es crítico garantizar
+chat distribuido, logging de eventos, y sistemas de mensagemría, es crítico garantizar
 que los eventos se ordenen causalmente para evitar inconsistencias.
 
 ### Problema
-Implementar un sistema de log/mensajería distribuido que garantice:
-- Ordenación causal de mensajes (happens-before relationship)
+Implementar un sistema de log/mensagemría distribuido que garantice:
+- Ordenación causal de mensagems (happens-before relationship)
 - Elección automática de líder en caso de fallas
 - Replicación consistente entre nodos geográficamente distribuidos
 
@@ -2358,7 +2358,7 @@ Implementar un sistema de log/mensajería distribuido que garantice:
 
 ---
 
-## II. ARQUITECTURA DEL SISTEMA
+## II. ARQUITETURA DO SISTEMA
 
 ### Topología
 El sistema consiste en 3 nodos desplegados en regiones geográficas distintas:
@@ -2374,7 +2374,7 @@ El sistema consiste en 3 nodos desplegados en regiones geográficas distintas:
 Cada nodo es una instancia independiente con:
 - **API REST:** FastAPI (Python) exponiendo endpoints
 - **Reloj Lamport:** Gestión de timestamps lógicos
-- **Replicador:** Propaga mensajes a otros nodos
+- **Replicador:** Propaga mensagems a otros nodos
 - **Detector de Líder:** Monitorea y re-elige líder
 
 #### 2.2 Comunicación
@@ -2411,11 +2411,11 @@ Para cada proceso Pi:
 1. **Evento Local:** Antes de evento, incrementar reloj local
    `LC_i = LC_i + 1`
 
-2. **Envío de Mensaje:** Incluir timestamp actual en mensaje
+2. **Envío de Mensaje:** Incluir timestamp actual en mensagem
    `send(m, LC_i)`
 
 3. **Recepción de Mensaje:** Actualizar reloj local
-   `LC_i = max(LC_i, LC_mensaje) + 1`
+   `LC_i = max(LC_i, LC_mensagem) + 1`
 
 #### Pseudocódigo
 
@@ -2431,11 +2431,11 @@ class LamportClock:
         time = max(time, remote_time) + 1
         return time
 
-# Al enviar mensaje
+# Al enviar mensagem
 lamport_ts = clock.increment()
 send_message(content, lamport_ts)
 
-# Al recibir mensaje
+# Al recibir mensagem
 clock.update(message.lamport_ts)
 store_message(message)
 ```
@@ -2494,13 +2494,13 @@ function start_election():
 ### 3.3 Replicación Single-Leader
 
 #### Objetivo
-Garantizar que todos los mensajes se repliquen en todos los nodos en orden causal.
+Garantizar que todos los mensagems se repliquen en todos los nodos en orden causal.
 
 #### Flujo
 
-1. **Cliente → Líder:** Cliente envía mensaje a cualquier nodo
+1. **Cliente → Líder:** Cliente envía mensagem a cualquier nodo
 2. **Reenvío:** Si no es líder, reenviar al líder
-3. **Líder → Followers:** Líder incrementa Lamport, crea mensaje, replica
+3. **Líder → Followers:** Líder incrementa Lamport, crea mensagem, replica
 4. **Followers:** Reciben, actualizan Lamport, almacenan ordenadamente
 
 #### Garantías
@@ -2529,7 +2529,7 @@ Garantizar que todos los mensajes se repliquen en todos los nodos en orden causa
 ```python
 class Message:
     id: int                    # ID secuencial único
-    content: str               # Contenido del mensaje
+    content: str               # Contenido del mensagem
     lamport_timestamp: int     # Timestamp Lamport
     node_id: int               # Nodo origen
     physical_timestamp: float  # Para debugging
@@ -2553,7 +2553,7 @@ class Message:
 ### 5.1 Escenario 1: Mensajes Concurrentes
 
 #### Setup
-- 100 mensajes enviados concurrentemente
+- 100 mensagems enviados concurrentemente
 - 10 clientes simultáneos
 - Target: nodo líder
 
@@ -2622,7 +2622,7 @@ Medir latencia HTTP entre todos los pares de nodos (20 pings cada uno).
 [INSERTAR MAPA DE CALOR DE LATENCIAS]
 
 #### Análisis
-La mayor latencia se observa entre Europa y Asia (≈246ms), consistente con
+La mayor latencia se observa entre Europa y Ásia (≈246ms), consistente con
 distancia geográfica. Latencias dentro de rangos esperados para distribución global.
 
 ---
@@ -2632,14 +2632,14 @@ distancia geográfica. Latencias dentro de rangos esperados para distribución g
 ### Logros
 - ✅ Implementación exitosa de Reloj Lógico de Lamport
 - ✅ Algoritmo Bully funcional con recuperación automática
-- ✅ 0 violaciones de causalidad en 1000+ mensajes
+- ✅ 0 violaciones de causalidad en 1000+ mensagems
 - ✅ Deployment en 3 regiones de GCP
-- ✅ Dashboard web en tiempo real
+- ✅ Dashboard web em tempo real
 
 ### Limitaciones
 - Replicación síncrona (alta latencia en escrituras)
 - Single point of failure durante re-elección
-- Sin persistencia (mensajes en memoria)
+- Sin persistencia (mensagems en memoria)
 
 ### Trabajo Futuro
 - **Relojes Vectoriales:** Capturar concurrencia real
@@ -2683,14 +2683,14 @@ distancia geográfica. Latencias dentro de rangos esperados para distribución g
 
 **Persona 1:**
 "Hola, somos [Nombre 1] y [Nombre 2]. Para este proyecto de Sistemas Distribuidos,
-implementamos un sistema de log distribuido con ordenación causal usando Relojes
+implementamos un sistema de log distribuído con ordenación causal usando Relojes
 de Lamport y elección de líder con el algoritmo Bully."
 
 **[Pantalla: Diagrama de arquitectura - 3 nodos en mapa mundial]**
 
 **Persona 2:**
 "El sistema está desplegado en Google Cloud Platform en 3 regiones: Estados Unidos,
-Europa y Asia. Cada nodo puede recibir mensajes, pero solo el líder los replica
+Europa y Ásia. Cada nodo puede recibir mensagems, pero solo el líder los replica
 a los demás, garantizando orden causal mediante timestamps de Lamport."
 
 ---
@@ -2700,7 +2700,7 @@ a los demás, garantizando orden causal mediante timestamps de Lamport."
 **[Pantalla: VSCode con main.py abierto]**
 
 **Persona 1:**
-"Veamos el código. Aquí en la línea 70, antes de crear un mensaje, incrementamos
+"Veamos el código. Aquí en la línea 70, antes de crear un mensagem, incrementamos
 el reloj de Lamport. Esto garantiza que cada evento tenga un timestamp único y
 creciente."
 
@@ -2711,7 +2711,7 @@ lamport_time = lamport_clock.increment()
 ```
 
 **Persona 2:**
-"Y acá en la línea 90, cuando un nodo recibe un mensaje del líder, actualiza su
+"Y acá en la línea 90, cuando un nodo recibe un mensagem del líder, actualiza su
 reloj local usando la regla de Lamport: toma el máximo entre su reloj local y el
 timestamp recibido, y le suma 1."
 
@@ -2741,15 +2741,15 @@ se declara líder y notifica a todos."
 **[Resaltar badge "LEADER" en dashboard]**
 
 **Persona 1:**
-"Vamos a enviar 50 mensajes concurrentes usando nuestro script de testing..."
+"Vamos a enviar 50 mensagems concurrentes usando nuestro script de testing..."
 
 **[Terminal: ejecutar test_concurrent_messages.py]**
 
 **Persona 2:**
-"Perfecto, vemos que los 50 mensajes llegaron a los 3 nodos, todos ordenados
+"Perfecto, vemos que los 50 mensagems llegaron a los 3 nodos, todos ordenados
 correctamente por timestamp de Lamport. Cero violaciones de causalidad."
 
-**[Mostrar tabla de mensajes en dashboards]**
+**[Mostrar tabla de mensagems en dashboards]**
 
 **Persona 1:**
 "Ahora lo interesante: vamos a matar el líder y ver cómo el sistema se recupera."
@@ -2763,11 +2763,11 @@ segundos... Y ahora el nodo 8002 en Europa se está eligiendo como nuevo líder!
 **[Mostrar cambio de badge en dashboard]**
 
 **Persona 1:**
-"Enviemos un nuevo mensaje para verificar que el sistema sigue funcionando..."
+"Enviemos un nuevo mensagem para verificar que o sistema continua funcionando..."
 
-**[curl POST mensaje]**
+**[curl POST mensagem]**
 
-"Excelente, el mensaje se replicó correctamente con el nuevo líder."
+"Excelente, el mensagem se replicó correctamente con el nuevo líder."
 
 ---
 
@@ -2777,7 +2777,7 @@ segundos... Y ahora el nodo 8002 en Europa se está eligiendo como nuevo líder!
 
 **Persona 2:**
 "Los experimentos muestran resultados muy buenos. Logramos 0 violaciones de
-causalidad en más de 1000 mensajes. La latencia promedio entre regiones es de
+causalidad en más de 1000 mensagems. La latencia promedio entre regiones es de
 150 milisegundos, y el sistema se recupera de fallas en menos de 8 segundos."
 
 **[Mostrar gráfica de latencias inter-regionales]**

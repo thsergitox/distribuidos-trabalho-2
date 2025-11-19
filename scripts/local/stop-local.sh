@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Script para detener el cluster local
+# Script para parar o cluster local
 
-echo "Stopping local distributed cluster..."
+echo "Parando cluster distribuído local..."
 
 docker rm -f node1 node2 node3 2>/dev/null || true
 docker network rm distributed-net 2>/dev/null || true
 
-echo "✓ Cluster stopped and cleaned up"
+echo "✓ Cluster parado e limpo"

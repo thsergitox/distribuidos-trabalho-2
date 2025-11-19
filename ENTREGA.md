@@ -209,7 +209,7 @@ export GCP_PROJECT_ID="trabalho2-477920"
 
 ## 🏆 Itens Extras (Bônus)
 
-✅ **Dashboard Web Interactivo** - Visualização em tempo real (HTML/CSS/JS)
+✅ **Dashboard Web Interativo** - Visualização em tempo real (HTML/CSS/JS)
 ✅ **Análise de Performance** - Latências WAN, throughput, saturação
 ✅ **Deployment Geodistribuído** - 3 continentes, 36.000 km de separação
 ✅ **Scripts de Automação** - Deployment, testes e métricas automatizados

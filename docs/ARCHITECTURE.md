@@ -1,55 +1,55 @@
-# Arquitectura del Sistema Distribuido
+# Arquitetura do Sistema Distribuído
 
-## 🌍 Distribución Geográfica Global
+## 🌍 Distribuição Geográfica Global
 
-### Regiones Seleccionadas (Máxima Distancia)
+### Regiões Selecionadas (Máxima Distância)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    DISTRIBUCIÓN GLOBAL                       │
+│                    DISTRIBUIÇÃO GLOBAL                       │
 └─────────────────────────────────────────────────────────────┘
 
 🇺🇸 Node 1: Iowa, USA (us-central1-a)
-   Latitud: 41.8780° N
-   Longitud: 93.0977° W
+   Latitude: 41.8780° N
+   Longitude: 93.0977° W
 
 🇧🇷 Node 2: São Paulo, Brasil (southamerica-east1-a)
-   Latitud: 23.5505° S
-   Longitud: 46.6333° W
+   Latitude: 23.5505° S
+   Longitude: 46.6333° W
 
-🇦🇺 Node 3: Sydney, Australia (australia-southeast1-a)
-   Latitud: 33.8688° S
-   Longitud: 151.2093° E
+🇦🇺 Node 3: Sydney, Austrália (australia-southeast1-a)
+   Latitude: 33.8688° S
+   Longitude: 151.2093° E
 ```
 
-### Distancias Geográficas
+### Distâncias Geográficas
 
-| Desde → Hasta | Distancia (km) | Latencia Estimada (ms) |
-|---------------|----------------|------------------------|
+| De → Para | Distância (km) | Latência Estimada (ms) |
+|-----------|----------------|------------------------|
 | Iowa → São Paulo | ~9,500 km | 150-200 ms |
 | Iowa → Sydney | ~13,300 km | 200-250 ms |
 | São Paulo → Sydney | ~13,600 km | 250-300 ms |
 
-**Total de distancia recorrida:** >36,000 km (¡casi la circunferencia de la Tierra!)
+**Distância total percorrida:** >36.000 km (quase a circunferência da Terra!)
 
-### ¿Por qué estas regiones?
+### Por que estas regiões?
 
-1. **Máxima separación geográfica:**
-   - Cubrimos 3 continentes diferentes
-   - Hemisferios norte y sur representados
-   - Múltiples zonas horarias (diferencia de ~15 horas entre Iowa y Sydney)
+1. **Máxima separação geográfica:**
+   - Cobrimos 3 continentes diferentes
+   - Hemisférios norte e sul representados
+   - Múltiplos fusos horários (diferença de ~15 horas entre Iowa e Sydney)
 
-2. **Simula un sistema distribuido REAL:**
-   - Latencias altas (150-300ms) similares a aplicaciones globales reales
-   - Diferentes condiciones de red
-   - Prueba real del algoritmo Bully y Lamport bajo condiciones adversas
+2. **Simula um sistema distribuído REAL:**
+   - Latências altas (150-300ms) similares a aplicações globais reais
+   - Diferentes condições de rede
+   - Teste real do algoritmo Bully e Lamport sob condições adversas
 
-3. **Demuestra propiedades del sistema:**
-   - **Reloj Lógico de Lamport:** NO depende de sincronización de relojes físicos
-   - **Algoritmo Bully:** Funciona incluso con latencias altas
-   - **Tolerancia a fallos:** Si una región falla, las otras 2 continúan
+3. **Demonstra propriedades do sistema:**
+   - **Relógio Lógico de Lamport:** NÃO depende de sincronização de relógios físicos
+   - **Algoritmo Bully:** Funciona mesmo com latências altas
+   - **Tolerância a falhas:** Se uma região falha, as outras 2 continuam
 
-## 🏗️ Arquitectura de Deployment
+## 🏗️ Arquitetura de Deployment
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -58,7 +58,7 @@
 
 ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
 │  us-central1-a      │  │ southamerica-east1-a│  │australia-southeast1-a│
-│  (Iowa, USA)        │  │ (São Paulo, Brasil) │  │  (Sydney, Australia)│
+│  (Iowa, USA)        │  │ (São Paulo, Brasil) │  │  (Sydney, Austrália)│
 │  IP: 34.55.87.209   │  │  IP: 34.95.212.100  │  │  IP: 35.201.29.184  │
 │                     │  │                     │  │                     │
 │  ┌──────────────┐   │  │  ┌──────────────┐   │  │  ┌──────────────┐   │
@@ -81,146 +81,146 @@
 └─────────────────────┘  └─────────────────────┘  └─────────────────────┘
          │                        │                        │
          └────────────────────────┴────────────────────────┘
-        Comunicación HTTP/REST usando IPs públicas
-        (Internet - Latencias reales de 150-300ms)
+        Comunicação HTTP/REST usando IPs públicos
+        (Internet - Latências reais de 150-300ms)
 ```
 
 **Nota Importante sobre Networking:**
-- En **Docker local**: Los nodos usan nombres de contenedor (node1, node2, node3)
-- En **GCP**: Los nodos usan IPs públicas pasadas via variable `OTHER_SERVERS`
-- El código detecta automáticamente el entorno y se configura apropiadamente
+- No **Docker local**: Os nodos usam nomes de container (node1, node2, node3)
+- No **GCP**: Os nodos usam IPs públicos passados via variável `OTHER_SERVERS`
+- O código detecta automaticamente o ambiente e se configura apropriadamente
 
-## 🔄 Flujo de Comunicación
+## 🔄 Fluxo de Comunicação
 
-### 1. Elección de Líder (Algoritmo Bully)
+### 1. Eleição de Líder (Algoritmo Bully)
 
 ```
-Inicio: Todos los nodos inician simultáneamente
+Início: Todos os nodos iniciam simultaneamente
 
-Node 8001 (Iowa):     "¿Hay alguien con ID mayor?"
+Node 8001 (Iowa):     "Há alguém com ID maior?"
                       → Consulta a 8002 (Brasil) [~180ms RTT]
                       → Consulta a 8003 (Sydney) [~230ms RTT]
 
-Node 8002 (Brasil):   "¿Hay alguien con ID mayor?"
+Node 8002 (Brasil):   "Há alguém com ID maior?"
                       → Consulta a 8003 (Sydney) [~270ms RTT]
 
-Node 8003 (Sydney):   "No hay nadie mayor, soy el líder"
+Node 8003 (Sydney):   "Não há ninguém maior, sou o líder"
                       → Notifica a todos [~250ms promedio]
 
-Resultado: Node 8003 es el LÍDER
-Tiempo total de elección: ~1-2 segundos
+Resultado: Node 8003 é o LÍDER
+Tempo total de eleição: ~1-2 segundos
 ```
 
-### 2. Replicación de Mensajes (Reloj Lógico de Lamport)
+### 2. Replicação de Mensagens (Relógio Lógico de Lamport)
 
 ```
 Cliente → Node 8001 (Iowa):
   POST /?message=Hello
 
 Node 8001:
-  1. Detecta que NO es líder
+  1. Detecta que NÃO é líder
   2. Forward a Node 8003 (Sydney) [~230ms]
 
 Node 8003 (Líder):
   1. Incrementa Lamport Clock: t=1
-  2. Crea mensaje: {id: 2, lamport: 1, node: 8003}
-  3. Replica en PARALELO:
+  2. Cria mensagem: {id: 2, lamport: 1, node: 8003}
+  3. Replica em PARALELO:
      → Node 8001 (Iowa)   [~230ms]
      → Node 8002 (Brasil) [~270ms]
 
-Node 8001 y 8002:
-  1. Reciben mensaje con lamport=1
-  2. Actualizan reloj: max(local, 1) + 1
-  3. Guardan mensaje ordenado por Lamport
-  4. Responden al líder
+Node 8001 e 8002:
+  1. Recebem mensagem com lamport=1
+  2. Atualizam relógio: max(local, 1) + 1
+  3. Guardam mensagem ordenada por Lamport
+  4. Respondem ao líder
 
-Tiempo total: ~500-600ms (incluyendo latencias globales)
+Tempo total: ~500-600ms (incluindo latências globais)
 ```
 
-## 📊 Métricas Observables
+## 📊 Métricas Observáveis
 
-### Latencias Esperadas
+### Latências Esperadas
 
-| Operación | Latencia Estimada |
-|-----------|-------------------|
-| Lectura local (GET /messages) | 1-5 ms |
-| Escritura en líder (POST /) | 10-20 ms |
-| Replicación global completa | 300-600 ms |
-| Elección de líder (re-election) | 1-2 segundos |
+| Operação | Latência Estimada |
+|----------|-------------------|
+| Leitura local (GET /messages) | 1-5 ms |
+| Escrita no líder (POST /) | 10-20 ms |
+| Replicação global completa | 300-600 ms |
+| Eleição de líder (re-election) | 1-2 segundos |
 | Health check entre nodos | 150-300 ms |
 
-### Propiedades Garantizadas
+### Propriedades Garantidas
 
-✅ **Consistencia Causal (Lamport):**
-   - Si mensaje A → B (causalmente), entonces Lamport(A) < Lamport(B)
-   - SIEMPRE, independientemente de latencias de red
+✅ **Consistência Causal (Lamport):**
+   - Se mensagem A → B (causalmente), então Lamport(A) < Lamport(B)
+   - SEMPRE, independentemente de latências de rede
 
-✅ **Disponibilidad (Bully):**
-   - Si 2 de 3 nodos están vivos, el sistema funciona
-   - Re-elección automática en ~1-2 segundos
+✅ **Disponibilidade (Bully):**
+   - Se 2 de 3 nodos estão vivos, o sistema funciona
+   - Re-eleição automática em ~1-2 segundos
 
-✅ **Tolerancia a Particiones:**
-   - Cada nodo puede seguir operando localmente
-   - Eventual consistency cuando la red se recupera
+✅ **Tolerância a Partições:**
+   - Cada nodo pode seguir operando localmente
+   - Consistência eventual quando a rede se recupera
 
-## 🔌 APIs Requeridas en GCP
+## 🔌 APIs Requeridas no GCP
 
-Para que el deployment funcione correctamente, necesitas habilitar estas APIs:
+Para que o deployment funcione corretamente, você precisa habilitar estas APIs:
 
 ```bash
-# Compute Engine API - Para crear y gestionar VMs
+# Compute Engine API - Para criar e gerenciar VMs
 gcloud services enable compute.googleapis.com
 
-# Artifact Registry API - Para almacenar imágenes Docker (nuevo sistema)
+# Artifact Registry API - Para armazenar imagens Docker (novo sistema)
 gcloud services enable artifactregistry.googleapis.com
 
-# Container Registry API - Para backward compatibility con gcr.io
+# Container Registry API - Para backward compatibility com gcr.io
 gcloud services enable containerregistry.googleapis.com
 ```
 
-**Nota:** Aunque usamos `gcr.io` en el código, Google Cloud internamente redirige a Artifact Registry, por lo que ambas APIs son necesarias.
+**Nota:** Embora usemos `gcr.io` no código, Google Cloud internamente redireciona para Artifact Registry, portanto ambas as APIs são necessárias.
 
-## 💰 Costos Estimados (GCP)
+## 💰 Custos Estimados (GCP)
 
 ```
-VM e2-micro (3 instancias):
-  - Precio: ~$6.11/mes por instancia
-  - Total VMs: ~$18.33/mes
+VM e2-micro (3 instâncias):
+  - Preço: ~$6.11/mês por instância
+  - Total VMs: ~$18.33/mês
 
-Egress Traffic (datos saliendo de GCP):
-  - Primeros 1GB/mes: Gratis
-  - Siguiente 10TB: $0.12/GB
-  - Estimado para testing: ~$5/mes
+Egress Traffic (dados saindo do GCP):
+  - Primeiros 1GB/mês: Grátis
+  - Próximos 10TB: $0.12/GB
+  - Estimado para testing: ~$5/mês
 
-TOTAL ESTIMADO: ~$25/mes
+TOTAL ESTIMADO: ~$25/mês
 
-Para este proyecto (algunas horas): < $1
+Para este projeto (algumas horas): < $1
 ```
 
-## 🔒 Seguridad
+## 🔒 Segurança
 
 ### Firewall Rules
 
 ```
 allow-distributed-log:
   - Protocolo: TCP
-  - Puertos: 80, 443, 8000-8100
-  - Fuente: 0.0.0.0/0 (cualquier IP)
-  - Target: VMs con tag "distributed-log"
+  - Portas: 80, 443, 8000-8100
+  - Fonte: 0.0.0.0/0 (qualquer IP)
+  - Target: VMs com tag "distributed-log"
 
 allow-ssh-distributed-log:
   - Protocolo: TCP
-  - Puerto: 22
-  - Fuente: 0.0.0.0/0
-  - Target: VMs con tag "distributed-log"
+  - Porta: 22
+  - Fonte: 0.0.0.0/0
+  - Target: VMs com tag "distributed-log"
 ```
 
-### Mejoras de Seguridad (Producción)
+### Melhorias de Segurança (Produção)
 
-⚠️ Para un sistema de producción, implementar:
-- HTTPS con certificados TLS
-- Autenticación entre nodos (tokens JWT)
-- IP whitelisting (solo IPs de nodos conocidos)
-- VPN o VPC peering privado
+⚠️ Para um sistema de produção, implementar:
+- HTTPS com certificados TLS
+- Autenticação entre nodos (tokens JWT)
+- IP whitelisting (somente IPs de nodos conhecidos)
+- VPN ou VPC peering privado
 - Rate limiting
 - DDoS protection (Cloud Armor)

@@ -14,23 +14,23 @@ import server
 
 app = FastAPI()
 
-# Servir archivos estáticos (dashboard HTML)
-# El path es relativo al directorio de ejecución
+# Servir arquivos estáticos (dashboard HTML)
+# O path é relativo ao diretório de execução
 import pathlib
 static_path = pathlib.Path(__file__).parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
-# Obtener NODE_ID desde variable de entorno
+# Obter NODE_ID da variável de ambiente
 NODE_ID_ENV = os.getenv("NODE_ID")
 my_id = int(NODE_ID_ENV) if NODE_ID_ENV else None
 
-# Inicializar Reloj Lógico de Lamport
+# Inicializar Relógio Lógico de Lamport
 lamport_clock = LamportClock()
 
-# Configurar lista de servidores basado en el entorno
-# Prioridad: Variables de entorno > Docker names (default)
-# Variables de entorno para GCP:
+# Configurar lista de servidores baseado no ambiente
+# Prioridade: Variáveis de ambiente > Docker names (default)
+# Variáveis de ambiente para GCP:
 #   OTHER_SERVERS="34.55.87.209:80:8001,34.95.212.100:80:8002,35.201.29.184:80:8003"
 OTHER_SERVERS_ENV = os.getenv("OTHER_SERVERS")
 
@@ -61,13 +61,13 @@ servers = [
 
 class Message(BaseModel):
     """
-    Modelo de mensaje con soporte para Reloj Lógico de Lamport
+    Modelo de mensagem com suporte para Relógio Lógico de Lamport
 
     Attributes:
-        id: ID único del mensaje (incremental)
-        content: Contenido del mensaje
+        id: ID único da mensagem (incremental)
+        content: Conteúdo da mensagem
         lamport_timestamp: Timestamp lógico de Lamport
-        node_id: ID del nodo que creó el mensaje
+        node_id: ID do nó que criou a mensagem
         physical_timestamp: Timestamp físico (time.time()) para debugging
     """
     id: int
@@ -78,7 +78,7 @@ class Message(BaseModel):
 
 
 messages = [
-    # Mensaje inicial con timestamp Lamport = 0
+    # Mensagem inicial com timestamp Lamport = 0
     Message(
         id=1,
         content="Hello",
@@ -92,17 +92,17 @@ leader = None
 last_id = 1
 def leader_server():
     """
-    Obtiene el objeto Server del líder actual
+    Obtém o objeto Server do líder atual
 
     Returns:
-        Server: Objeto del líder, o None si no hay líder o si YO soy el líder
+        Server: Objeto do líder, ou None se não há líder ou se EU sou o líder
     """
     global leader
     if leader is None:
         print(f"[Node {my_id}] leader_server(): leader is None")
         return None
 
-    # Si YO soy el líder, no tengo que buscar en la lista
+    # Se EU sou o líder, não preciso buscar na lista
     if leader == my_id:
         print(f"[Node {my_id}] leader_server(): I am the leader")
         return None
@@ -122,23 +122,23 @@ async def get(id : int ):
 @app.post("/")
 async def post(message: str):
     """
-    Endpoint para crear un nuevo mensaje
+    Endpoint para criar uma nova mensagem
 
-    Flujo:
-    1. Si no soy líder → reenviar al líder
-    2. Si soy líder → crear mensaje y replicar a followers
+    Fluxo:
+    1. Se não sou líder → reencaminhar ao líder
+    2. Se sou líder → criar mensagem e replicar aos followers
 
     Args:
-        message: Contenido del mensaje
+        message: Conteúdo da mensagem
 
     Returns:
-        int: ID del mensaje creado (solo líder)
-        dict: Respuesta del líder (si forwarded)
-        dict: Error si no hay líder disponible
+        int: ID da mensagem criada (somente líder)
+        dict: Resposta do líder (se forwarded)
+        dict: Erro se não há líder disponível
     """
     print(f"[Node {my_id}] Received POST request, message='{message}', leader={leader}")
 
-    # PASO 1: Verificar si soy el líder
+    # PASSO 1: Verificar se sou o líder
     if leader != my_id:
         print(f"[Node {my_id}] I'm not the leader ({leader}), forwarding...")
         leader_srv = leader_server()
@@ -147,7 +147,7 @@ async def post(message: str):
             print(f"[Node {my_id}] ERROR: No leader available!")
             return {"error": "No leader available"}, 503
 
-        # Forward al líder
+        # Forward ao líder
         url = f"{leader_srv.url()}/?message={message}"
         try:
             response = requests.post(url, json={"message": message}, timeout=2)
@@ -157,10 +157,10 @@ async def post(message: str):
             print(f"[Node {my_id}] ERROR: Leader not reachable: {e}")
             return {"error": "Leader not reachable"}, 503
 
-    # PASO 2: Soy el líder, crear mensaje
+    # PASSO 2: Sou o líder, criar mensagem
     global messages
 
-    # IMPORTANTE: Incrementar reloj Lamport ANTES de crear el mensaje
+    # IMPORTANTE: Incrementar relógio Lamport ANTES de criar a mensagem
     lamport_time = lamport_clock.increment()
 
     id = max(msg.id for msg in messages) + 1
@@ -175,7 +175,7 @@ async def post(message: str):
 
     print(f"[Node {my_id}] Created message {id} with Lamport timestamp {lamport_time}, replicating to followers...")
 
-    # PASO 3: Replicar a todos los followers
+    # PASSO 3: Replicar a todos os followers
     for server in servers:
         if server.id and server.id != my_id:
             url = f"{server.url()}/message_received"
@@ -190,32 +190,32 @@ async def post(message: str):
 @app.post("/message_received")
 async def message_received(message: Message):
     """
-    Endpoint para recibir mensajes replicados desde el líder
+    Endpoint para receber mensagens replicadas do líder
 
-    Flujo:
-    1. Actualizar reloj Lamport con max(local, remote) + 1
-    2. Guardar mensaje
-    3. Ordenar mensajes por timestamp Lamport
+    Fluxo:
+    1. Atualizar relógio Lamport com max(local, remote) + 1
+    2. Guardar mensagem
+    3. Ordenar mensagens por timestamp Lamport
 
     Args:
-        message: Mensaje replicado con todos los campos Lamport
+        message: Mensagem replicada com todos os campos Lamport
 
     Returns:
-        dict: Status y timestamp Lamport local actualizado
+        dict: Status e timestamp Lamport local atualizado
     """
     global messages, last_id
 
-    # PASO 1: Actualizar reloj Lamport
+    # PASSO 1: Atualizar relógio Lamport
     local_lamport = lamport_clock.update(message.lamport_timestamp)
 
     print(f"[Node {my_id}] Received message {message.id} from leader, "
           f"Lamport: remote={message.lamport_timestamp}, local={local_lamport}")
 
-    # PASO 2: Guardar mensaje
+    # PASSO 2: Guardar mensagem
     messages.append(message)
     last_id = max(msg.id for msg in messages)
 
-    # PASO 3: Ordenar mensajes por Lamport (desempate por node_id)
+    # PASSO 3: Ordenar mensagens por Lamport (desempate por node_id)
     messages.sort(key=lambda m: (m.lamport_timestamp, m.node_id))
 
     return {
@@ -225,10 +225,10 @@ async def message_received(message: Message):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
     """
-    Endpoint para servir el dashboard HTML
+    Endpoint para servir o dashboard HTML
 
     Returns:
-        HTMLResponse: Dashboard interactivo
+        HTMLResponse: Dashboard interativo
     """
     dashboard_path = pathlib.Path(__file__).parent / "static" / "dashboard.html"
     with open(dashboard_path, "r") as f:
@@ -237,17 +237,17 @@ async def dashboard():
 
 @app.get("/state")
 async def state():
-    """Retorna estado del nodo (ID, líder actual)"""
+    """Retorna estado do nó (ID, líder atual)"""
     return str(my_id) + " " + str(leader) + str(leader_server())
 
 
 @app.get("/lamport_time")
 async def get_lamport_time():
     """
-    Retorna el timestamp Lamport actual del nodo
+    Retorna o timestamp Lamport atual do nó
 
     Returns:
-        dict: Tiempo Lamport actual
+        dict: Tempo Lamport atual
     """
     return {"time": lamport_clock.get_time(), "node_id": my_id}
 
@@ -255,12 +255,12 @@ async def get_lamport_time():
 @app.get("/messages")
 async def get_all_messages():
     """
-    Retorna todos los mensajes ordenados por timestamp Lamport
+    Retorna todas as mensagens ordenadas por timestamp Lamport
 
     Returns:
-        list: Lista de mensajes ordenados causalmente
+        list: Lista de mensagens ordenadas causalmente
     """
-    # Ordenar por Lamport (ya deberían estar ordenados, pero por seguridad)
+    # Ordenar por Lamport (já deveriam estar ordenadas, mas por segurança)
     sorted_messages = sorted(messages, key=lambda m: (m.lamport_timestamp, m.node_id))
     return sorted_messages
             
@@ -278,38 +278,38 @@ def leader_selected(sleader = int):
 
 def check_leader():
     """
-    Thread que verifica continuamente el estado del líder
+    Thread que verifica continuamente o estado do líder
 
     Responsabilidades:
-    1. Verificar cada 5 segundos si el líder está vivo
-    2. Iniciar elección si el líder cae
-    3. Actualizar variable global 'leader' si detecta cambio
+    1. Verificar a cada 5 segundos se o líder está vivo
+    2. Iniciar eleição se o líder cai
+    3. Atualizar variável global 'leader' se detecta mudança
     """
     global leader
     print(f"[Node {my_id}] Starting leader health check (current leader: {leader})")
 
     while True:
-        # Si YO soy el líder, no necesito hacer health check
+        # Se EU sou o líder, não preciso fazer health check
         if leader == my_id:
             time.sleep(5)
             continue
 
         lserver = leader_server()
 
-        # Caso 1: No tenemos líder registrado
+        # Caso 1: Não temos líder registrado
         if lserver is None and leader is None:
             print(f"[Node {my_id}] No leader, starting election")
             start_election()
         elif lserver is not None:
-            # Caso 2: Tenemos líder, verificar si está vivo
+            # Caso 2: Temos líder, verificar se está vivo
             cleader = lserver.current_leader()
 
             if cleader is None:
-                # El líder no responde, iniciar elección
+                # O líder não responde, iniciar eleição
                 print(f"[Node {my_id}] Leader {leader} not responding, starting election")
                 start_election()
             elif cleader != leader:
-                # El líder cambió (raro, pero posible en race conditions)
+                # O líder mudou (raro, mas possível em race conditions)
                 print(f"[Node {my_id}] Leader changed from {leader} to {cleader}")
                 leader = cleader
 
@@ -351,7 +351,7 @@ def kill():
     import os
     os._exit(1)
     
-# Iniciar thread de verificación de líder
+# Iniciar thread de verificação de líder
 print(f"[Node {my_id}] Starting up...")
 threading.Thread(target=check_leader, daemon=True).start()
 

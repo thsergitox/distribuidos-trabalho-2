@@ -1,22 +1,22 @@
-# Sistema Distribuido de Log con Ordenación Causal
+# Sistema Distribuído de Log com Ordenação Causal
 
-Sistema distribuido que implementa los algoritmos de **Reloj Lógico de Lamport** y **Algoritmo Bully** para elección de líder, con replicación de mensajes entre 3 nodos geográficamente distribuidos.
+Sistema distribuído que implementa os algoritmos de **Relógio Lógico de Lamport** e **Algoritmo Bully** para eleição de líder, com replicação de mensagens entre 3 nodos geograficamente distribuídos.
 
 [![Python](https://img.shields.io/badge/Python-3.9-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Latest-green.svg)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![GCP](https://img.shields.io/badge/GCP-Deployed-orange.svg)](https://cloud.google.com/)
 
-## 📋 Descripción
+## 📋 Descrição
 
-Este proyecto implementa un sistema de log distribuido que garantiza:
-- **Ordenación causal de mensajes** mediante Reloj Lógico de Lamport
-- **Elección automática de líder** mediante Algoritmo Bully
-- **Replicación de mensajes** entre todos los nodos del cluster
-- **Tolerancia a fallos** con re-elección automática de líder
-- **Dashboard web interactivo** para visualización en tiempo real
+Este projeto implementa um sistema de log distribuído que garante:
+- **Ordenação causal de mensagens** mediante Relógio Lógico de Lamport
+- **Eleição automática de líder** mediante Algoritmo Bully
+- **Replicação de mensagens** entre todos os nodos do cluster
+- **Tolerância a falhas** com re-eleição automática de líder
+- **Dashboard web interativo** para visualização em tempo real
 
-## 🚀 Inicio Rápido
+## 🚀 Início Rápido
 
 ### Testing Local (Docker)
 
@@ -24,23 +24,23 @@ Este proyecto implementa un sistema de log distribuido que garantiza:
 # 1. Iniciar cluster de 3 nodos
 ./scripts/local/test-local.sh
 
-# 2. Abrir dashboard en el navegador
+# 2. Abrir dashboard no navegador
 open http://localhost:8001/dashboard
 
-# 3. Detener cluster
+# 3. Parar cluster
 ./scripts/local/stop-local.sh
 ```
 
-### Deployment en GCP
+### Deployment em GCP
 
 ```bash
-# 1. Configurar proyecto
-export GCP_PROJECT_ID="tu-proyecto-id"
+# 1. Configurar projeto
+export GCP_PROJECT_ID="seu-projeto-id"
 
 # 2. Deploy completo
 ./scripts/gcp/deploy-gcp.sh
 
-# 3. Re-deploy de contenedores con IPs correctas
+# 3. Re-deploy de containers com IPs corretas
 ./scripts/gcp/redeploy-containers.sh
 
 # 4. Verificar estado
@@ -49,32 +49,32 @@ export GCP_PROJECT_ID="tu-proyecto-id"
 
 ## 🎨 Dashboard Web
 
-Accede al dashboard interactivo:
+Acesse o dashboard interativo:
 - **Local:** `http://localhost:8001/dashboard`
-- **GCP:** `http://<IP-DEL-NODO>/dashboard`
+- **GCP:** `http://<IP-DO-NODO>/dashboard`
 
-El dashboard muestra:
-- ✅ Estado de nodos en tiempo real
-- ✅ Lamport timestamps actuales
-- ✅ Identificación del líder (👑)
-- ✅ Mensajes ordenados causalmente
-- ✅ Formulario para enviar mensajes
-- ✅ Auto-refresh cada 3 segundos
+O dashboard mostra:
+- ✅ Estado dos nodos em tempo real
+- ✅ Lamport timestamps atuais
+- ✅ Identificação do líder (👑)
+- ✅ Mensagens ordenadas causalmente
+- ✅ Formulário para enviar mensagens
+- ✅ Auto-refresh a cada 3 segundos
 
-## 📁 Estructura del Proyecto
+## 📁 Estrutura do Projeto
 
 ```
 distribuidos-trabalho-2/
-├── README.md                 # Este archivo
-├── requirements.txt          # Dependencias Python
-├── dockerfile               # Imagen Docker
-├── docs/                    # Documentación completa
-│   ├── ARCHITECTURE.md      # Arquitectura del sistema
-│   ├── QUICKSTART.md        # Guía rápida
+├── README.md                 # Este arquivo
+├── requirements.txt          # Dependências Python
+├── dockerfile               # Imagem Docker
+├── docs/                    # Documentação completa
+│   ├── ARCHITECTURE.md      # Arquitetura do sistema
+│   ├── QUICKSTART.md        # Guia rápido
 │   ├── gcp-setup.md         # Setup de GCP
-│   ├── Trabalho.md          # Especificación del proyecto
-│   └── PLAN_DETALLADO.md    # Plan de implementación
-├── scripts/                 # Scripts de deployment y testing
+│   ├── Trabalho.md          # Especificação do projeto
+│   └── PLAN_DETALLADO.md    # Plano de implementação
+├── scripts/                 # Scripts de deployment e testing
 │   ├── local/              # Scripts para Docker local
 │   │   ├── test-local.sh
 │   │   ├── stop-local.sh
@@ -86,41 +86,41 @@ distribuidos-trabalho-2/
 │   │   ├── check-gcp-status.sh
 │   │   ├── debug-node.sh
 │   │   └── test-gcp-system.sh
-│   └── monitoring/         # Scripts de monitoreo
+│   └── monitoring/         # Scripts de monitoramento
 │       └── watch-messages.sh
-├── src/                    # Código fuente
-│   ├── main.py            # Aplicación FastAPI principal
+├── src/                    # Código fonte
+│   ├── main.py            # Aplicação FastAPI principal
 │   ├── server.py          # Modelo de servidor
-│   ├── lamport_clock.py   # Implementación Reloj de Lamport
+│   ├── lamport_clock.py   # Implementação Relógio de Lamport
 │   └── static/
-│       └── dashboard.html # Dashboard web interactivo
-└── legacy/                # Archivos legacy (no usados)
+│       └── dashboard.html # Dashboard web interativo
+└── legacy/                # Arquivos legacy (não usados)
 ```
 
-## 📚 Documentación Completa
+## 📚 Documentação Completa
 
-Para más detalles, consulta:
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Arquitectura detallada del sistema
-- **[docs/QUICKSTART.md](docs/QUICKSTART.md)** - Guía rápida de deployment
-- **[docs/gcp-setup.md](docs/gcp-setup.md)** - Configuración de Google Cloud Platform
+Para mais detalhes, consulte:
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Arquitetura detalhada do sistema
+- **[docs/QUICKSTART.md](docs/QUICKSTART.md)** - Guia rápido de deployment
+- **[docs/gcp-setup.md](docs/gcp-setup.md)** - Configuração do Google Cloud Platform
 
-## 📊 Scripts Disponibles
+## 📊 Scripts Disponíveis
 
-### Scripts Locales (`scripts/local/`)
+### Scripts Locais (`scripts/local/`)
 - `test-local.sh` - Iniciar cluster local de 3 nodos
-- `stop-local.sh` - Detener cluster local
-- `test-send-messages.sh` - Enviar mensajes de prueba
+- `stop-local.sh` - Parar cluster local
+- `test-send-messages.sh` - Enviar mensagens de teste
 
 ### Scripts GCP (`scripts/gcp/`)
-- `deploy-gcp.sh` - Deployment completo en GCP
-- `redeploy-containers.sh` - Re-deployar contenedores con nueva configuración
-- `destroy-gcp.sh` - Eliminar toda la infraestructura de GCP
-- `check-gcp-status.sh` - Verificar estado de todos los nodos
-- `debug-node.sh <num>` - Ver logs detallados de un nodo
-- `test-gcp-system.sh` - Suite de tests para GCP
+- `deploy-gcp.sh` - Deployment completo em GCP
+- `redeploy-containers.sh` - Re-deployar containers com nova configuração
+- `destroy-gcp.sh` - Eliminar toda a infraestrutura de GCP
+- `check-gcp-status.sh` - Verificar estado de todos os nodos
+- `debug-node.sh <num>` - Ver logs detalhados de um nodo
+- `test-gcp-system.sh` - Suite de testes para GCP
 
-### Scripts de Monitoreo (`scripts/monitoring/`)
-- `watch-messages.sh <num>` - Monitorear mensajes en tiempo real
+### Scripts de Monitoramento (`scripts/monitoring/`)
+- `watch-messages.sh <num>` - Monitorar mensagens em tempo real
 
 ## 🎬 Roteiro para o Vídeo de Demonstração (5 minutos)
 
@@ -225,6 +225,6 @@ done
 
 Projeto desenvolvido para a disciplina **MC714 - Sistemas Distribuídos**, Unicamp, 2º Semestre de 2025.
 
-## 📄 Licencia
+## 📄 Licença
 
-Este proyecto es para uso académico.
+Este projeto é para uso acadêmico.
