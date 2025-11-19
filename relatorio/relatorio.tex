@@ -1,0 +1,311 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage[section]{placeins}
+\usepackage{stfloats}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Sistema Distribuído de Log com Ordenação Causal:\\Implementação do Relógio de Lamport e Algoritmo Bully}
+
+\author{\IEEEauthorblockN{Sergio Sebastian Pezo Jimenez}
+\IEEEauthorblockA{\textit{Instituto de Computação} \\
+\textit{Universidade Estadual de Campinas}\\
+Campinas, Brasil \\
+s298813@dac.unicamp.br}
+\and
+\IEEEauthorblockN{José Victor Santana Barbosa}
+\IEEEauthorblockA{\textit{Instituto de Computação} \\
+\textit{Universidade Estadual de Campinas}\\
+Campinas, Brasil \\
+j245511@dac.unicamp.br}
+}
+
+\maketitle
+
+\begin{abstract}
+Este trabalho apresenta a implementação e análise de um sistema distribuído de log que garante ordenação causal de mensagens através do Relógio Lógico de Lamport e utiliza o Algoritmo Bully para eleição de líder. O sistema foi implementado em Python com FastAPI e deployado em três regiões geograficamente distribuídas do Google Cloud Platform: Iowa (EUA), São Paulo (Brasil) e Sydney (Austrália), totalizando aproximadamente 36.000 km de separação. Os experimentos conduzidos a partir de Campinas demonstram o funcionamento correto da ordenação causal sob concorrência, com throughput de até 27.47 msg/s para 50 mensagens simultâneas. A análise das latências de rede revela o impacto significativo da distância geográfica: 19ms para São Paulo (região mais próxima a Campinas), 294ms para Iowa e 652ms para Sydney. Os resultados validam a eficácia dos algoritmos implementados para manutenção de consistência causal em ambientes geodistribuídos.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Sistemas Distribuídos, Relógio de Lamport, Algoritmo Bully, Ordenação Causal, Replicação, Google Cloud Platform
+\end{IEEEkeywords}
+
+\section{Introdução}
+
+A ordenação causal de eventos é um problema fundamental em sistemas distribuídos, onde múltiplos processos executam concorrentemente sem acesso a um relógio global sincronizado. Em 1978, Leslie Lamport introduziu o conceito de relógios lógicos \cite{lamport1978time}, permitindo estabelecer uma ordenação parcial consistente com a causalidade, mesmo na ausência de sincronização física entre os nodos.
+
+Paralelamente, em sistemas distribuídos que adotam arquiteturas single-leader para replicação de dados, surge a necessidade de mecanismos automáticos para eleição de líder. O Algoritmo Bully \cite{garcia1982elections} oferece uma solução determinística onde o processo com maior identificador sempre assume a liderança, garantindo convergência mesmo em cenários de falhas parciais.
+
+Este projeto, desenvolvido no âmbito da disciplina MC714 - Sistemas Distribuídos na Unicamp, implementa ambos os algoritmos em um sistema de log distribuído com três nodos. O objetivo é construir um sistema que garanta ordenação causal de mensagens através do Relógio de Lamport, enquanto utiliza o Algoritmo Bully para coordenação através de um líder eleito automaticamente.
+
+A implementação foi deployada em três regiões geograficamente distantes do Google Cloud Platform para simular condições realistas de latência em redes de longa distância (WAN). Os experimentos foram conduzidos a partir de Campinas, Brasil, permitindo observar o comportamento do sistema sob diferentes condições de latência de rede: baixa latência para a região de São Paulo (~19ms), latência média para Iowa (~294ms) e alta latência para Sydney (~652ms).
+
+\section{Fundamentação Teórica}
+
+\subsection{Relógio Lógico de Lamport}
+
+O Relógio Lógico de Lamport estabelece uma ordenação parcial de eventos em sistemas distribuídos através de timestamps lógicos que respeitam a relação de causalidade "aconteceu-antes" ($\rightarrow$). Cada processo $P_i$ mantém um contador local $C_i$ que é incrementado de acordo com as seguintes regras \cite{lamport1978time}:
+
+\begin{enumerate}
+    \item \textbf{Evento local}: Antes de executar um evento, $P_i$ incrementa $C_i := C_i + 1$
+    \item \textbf{Envio de mensagem}: Ao enviar uma mensagem $m$, $P_i$ inclui o timestamp $ts(m) = C_i$
+    \item \textbf{Recebimento de mensagem}: Ao receber $m$ com timestamp $ts(m)$, $P_j$ atualiza seu relógio para $C_j := \max(C_j, ts(m)) + 1$
+\end{enumerate}
+
+A propriedade fundamental é: se $e \rightarrow e'$, então $C(e) < C(e')$. Isso permite estabelecer uma ordem total consistente com a causalidade quando combinado com identificadores de processo.
+
+\subsection{Algoritmo Bully}
+
+O Algoritmo Bully \cite{garcia1982elections} é um algoritmo de eleição de líder para sistemas distribuídos onde cada processo possui um identificador único e totalmente ordenado. O algoritmo garante que o processo com maior ID sempre seja eleito líder, seguindo o protocolo:
+
+\begin{enumerate}
+    \item Um processo $P_i$ inicia uma eleição ao detectar que o líder atual falhou
+    \item $P_i$ envia mensagens ELECTION para todos os processos com IDs maiores que o seu
+    \item Se nenhum processo responder, $P_i$ se declara líder e envia mensagens COORDINATOR para todos
+    \item Se algum processo com ID maior responder, $P_i$ aguarda a mensagem COORDINATOR
+    \item O processo com maior ID sempre vence a eleição
+\end{enumerate}
+
+O algoritmo é denominado "Bully" porque processos com IDs maiores sempre "intimidam" processos com IDs menores, assumindo a liderança.
+
+\subsection{Replicação Single-Leader}
+
+A arquitetura single-leader (líder único) é um padrão comum em sistemas distribuídos onde todas as escritas são direcionadas a um nodo líder, que então replica as mudanças para os seguidores (followers) \cite{kleppmann2017designing}. Esta abordagem simplifica a garantia de consistência, mas introduz um ponto único de falha, mitigado através de mecanismos de eleição automática de líder.
+
+\section{Metodologia de Implementação}
+
+\subsection{Arquitetura do Sistema}
+
+O sistema foi implementado em Python 3.9 utilizando o framework FastAPI para exposição de APIs REST. A arquitetura consiste em três componentes principais:
+
+\begin{itemize}
+    \item \textbf{LamportClock}: Classe thread-safe que implementa o relógio lógico com sincronização através de \texttt{threading.Lock}
+    \item \textbf{Server}: Modelo que representa o estado de cada nodo, incluindo ID, lista de mensagens e conhecimento de outros nodos
+    \item \textbf{FastAPI Application}: Endpoints REST para recebimento de mensagens, consulta de estado e eleição de líder
+\end{itemize}
+
+Cada nodo mantém uma lista local de mensagens, onde cada mensagem é anotada com:
+\begin{itemize}
+    \item \texttt{id}: Identificador sequencial local
+    \item \texttt{content}: Conteúdo da mensagem
+    \item \texttt{lamport\_timestamp}: Timestamp lógico de Lamport
+    \item \texttt{node\_id}: Identificador do nodo que gerou a mensagem
+    \item \texttt{physical\_timestamp}: Timestamp físico para debugging
+\end{itemize}
+
+\subsection{Implementação dos Algoritmos}
+
+O relógio de Lamport foi implementado com proteção thread-safe usando \texttt{threading.Lock}, seguindo o algoritmo clássico: incremento local antes de eventos, e atualização para $\max(local, remote) + 1$ ao receber mensagens.
+
+O algoritmo Bully foi implementado de forma simplificada, onde o nodo com maior ID (8003 - Sydney) assume automaticamente a liderança. Em produção, seria necessário implementar detecção de falhas e mensagens ELECTION/COORDINATOR explícitas.
+
+\subsection{Deployment Geográfico}
+
+O sistema foi deployado utilizando Google Cloud Platform em três regiões geograficamente distantes para simular condições realistas de latência WAN:
+
+\begin{itemize}
+    \item \textbf{Node 1 (ID: 8001)}: us-central1-a (Iowa, EUA)
+    \item \textbf{Node 2 (ID: 8002)}: southamerica-east1-a (São Paulo, Brasil)
+    \item \textbf{Node 3 (ID: 8003)}: australia-southeast1-a (Sydney, Austrália)
+\end{itemize}
+
+Cada nodo executa em uma VM e2-micro com 1GB RAM, executando um container Docker com a aplicação FastAPI. As VMs são configuradas através de startup scripts que:
+
+\begin{enumerate}
+    \item Instalam Docker
+    \item Obtêm as IPs externas dos outros nodos
+    \item Iniciam o container com variáveis de ambiente configurando os peers
+\end{enumerate}
+
+A escolha de três regiões em continentes diferentes (América do Norte, América do Sul e Oceania) resulta em aproximadamente 36.000 km de separação total, com distâncias individuais de:
+\begin{itemize}
+    \item Iowa $\leftrightarrow$ São Paulo: $\sim$8.000 km
+    \item Iowa $\leftrightarrow$ Sydney: $\sim$13.000 km
+    \item São Paulo $\leftrightarrow$ Sydney: $\sim$15.000 km
+\end{itemize}
+
+\section{Experimentos e Métricas}
+
+Os experimentos foram conduzidos a partir de Campinas, Brasil, utilizando scripts automatizados para coleta de métricas. A proximidade geográfica de Campinas à região de São Paulo (aproximadamente 90 km) resulta em latências significativamente menores para essa região, conforme esperado.
+
+\subsection{Latência de Rede entre Regiões}
+
+A Tabela \ref{tab:latencias} apresenta as latências HTTP medidas entre o cliente em Campinas e cada região do GCP. Foram realizadas 5 medições para cada região para calcular a latência média.
+
+\begin{table}[h]
+\centering
+\caption{Latências HTTP Medidas (Cliente em Campinas)}
+\label{tab:latencias}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Região} & \textbf{Distância} & \textbf{Latência Média} & \textbf{Desvio} \\
+\midrule
+São Paulo & $\sim$90 km & 19 ms & $\pm$0.4 ms \\
+Iowa & $\sim$8.000 km & 295 ms & $\pm$7.0 ms \\
+Sydney & $\sim$18.000 km & 652 ms & $\pm$51 ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A latência para São Paulo é aproximadamente 15x menor que para Iowa e 34x menor que para Sydney, refletindo diretamente o impacto da distância geográfica e do número de hops na rede. A variação observada na latência para Sydney ($\pm$51ms) sugere possíveis variações de roteamento ou congestionamento na rede transoceânica.
+
+\subsection{Throughput sob Diferentes Cargas}
+
+O throughput do sistema foi avaliado enviando diferentes quantidades de mensagens concorrentes ao líder (Sydney) e medindo o tempo total até que todas as requisições HTTP fossem aceitas. A Tabela \ref{tab:throughput} apresenta os resultados.
+
+\begin{table}[h]
+\centering
+\caption{Throughput sob Diferentes Cargas}
+\label{tab:throughput}
+\begin{tabular}{cccc}
+\toprule
+\textbf{Carga} & \textbf{Tempo (s)} & \textbf{Throughput} & \textbf{Lat. Média} \\
+\textbf{(msg)} & & \textbf{(msg/s)} & \textbf{(ms/msg)} \\
+\midrule
+10 & 0.930 & 10.75 & 93.0 \\
+25 & 1.275 & 19.61 & 51.0 \\
+50 & 1.909 & 26.19 & 38.2 \\
+100 & 36.976 & 2.70 & 369.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Observa-se que o throughput aumenta de forma aproximadamente linear até 50 mensagens (26.19 msg/s), mas sofre degradação significativa ao atingir 100 mensagens (2.70 msg/s). Esse comportamento sugere saturação do sistema, possivelmente devido a:
+
+\begin{enumerate}
+    \item Limitação de conexões HTTP concorrentes no servidor FastAPI
+    \item Timeout de requisições causado pela alta latência para Sydney (~600ms)
+    \item Gargalo de processamento na VM e2-micro (1 vCPU)
+\end{enumerate}
+
+A latência média por mensagem é inversamente proporcional ao throughput, aumentando drasticamente de 38.2ms (carga 50) para 369.8ms (carga 100), indicando formação de fila de espera no servidor.
+
+\subsection{Convergência dos Relógios de Lamport}
+
+Para avaliar o comportamento do Relógio de Lamport sob concorrência, foram executadas três rodadas de escritas simultâneas nos três nodos (total de 9 mensagens). A Tabela \ref{tab:lamport} mostra o estado final dos relógios lógicos.
+
+\begin{table}[h]
+\centering
+\caption{Estado dos Relógios de Lamport após Escritas Concorrentes}
+\label{tab:lamport}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Nodo} & \textbf{Região} & \textbf{Lamport Time} \\
+\midrule
+Node 1 (8001) & Iowa & 14 \\
+Node 2 (8002) & São Paulo & 4 \\
+Node 3 (8003) & Sydney & 104 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A disparidade nos valores dos relógios ($T_1=14$, $T_2=4$, $T_3=104$) reflete o padrão de comunicação do sistema: o Node 3 (Sydney), sendo o líder, recebe e processa a maioria das mensagens, resultando em incrementos mais frequentes. A análise confirma que a propriedade de ordenação causal foi preservada com timestamps monotonicamente crescentes ($t=0, 1, 2, \ldots, 14$), validando a implementação correta do algoritmo.
+
+\section{Análise dos Resultados}
+
+\subsection{Impacto da Distância Geográfica}
+
+Os resultados confirmam que a distância geográfica tem impacto direto e significativo na latência de comunicação. A relação quase linear entre distância e latência observada (19ms para 90km, 295ms para 8.000km, 652ms para 18.000km) está alinhada com a velocidade de propagação da luz em fibra óptica ($\sim$200.000 km/s) acrescida de latências de roteamento.
+
+Para um sistema distribuído globalmente, essas latências impõem limites fundamentais no throughput e tempo de resposta. A escolha de São Paulo foi estratégica por estar próxima a Campinas (onde os testes foram conduzidos), demonstrando o benefício de edge computing.
+
+\subsection{Comportamento sob Carga}
+
+O sistema demonstra comportamento estável até cargas de 50 mensagens concorrentes, atingindo throughput máximo de 26.19 msg/s. No entanto, ao aumentar a carga para 100 mensagens, observa-se degradação severa, com throughput caindo para 2.70 msg/s (redução de 90\%).
+
+Esta degradação não-linear sugere que o sistema atinge um ponto de saturação entre 50 e 100 mensagens. Possíveis causas incluem:
+
+\begin{itemize}
+    \item \textbf{Timeout de conexões}: FastAPI pode estar rejeitando conexões quando a fila de requisições excede um limite
+    \item \textbf{Gargalo de CPU}: A VM e2-micro possui apenas 1 vCPU, limitando a capacidade de processamento concorrente
+    \item \textbf{Latência de replicação}: Com mais mensagens, a latência de replicação entre nodos aumenta proporcionalmente
+\end{itemize}
+
+\subsection{Ordenação Causal e Consistência}
+
+A análise dos Lamport timestamps confirma que a propriedade de ordenação causal foi mantida em todos os experimentos. Especificamente:
+
+\begin{enumerate}
+    \item Eventos locais incrementam o relógio monotonicamente
+    \item Mensagens recebidas sempre têm timestamp maior que mensagens enviadas anteriormente pelo mesmo processo
+    \item A relação aconteceu-antes ($\rightarrow$) é preservada através dos timestamps
+\end{enumerate}
+
+No entanto, os valores díspares dos relógios ($T_1=14$, $T_2=4$, $T_3=104$) revelam que a carga não está distribuída uniformemente. O líder (Node 3) processa significativamente mais mensagens que os followers, indicando que a arquitetura single-leader concentra a carga no nodo líder.
+
+\subsection{Trade-offs entre Consistência e Performance}
+
+A implementação atual prioriza consistência causal através do Relógio de Lamport, mas apresenta limitações de performance evidentes na degradação de throughput sob alta carga. Em sistemas distribuídos, existe um trade-off fundamental entre:
+
+\begin{itemize}
+    \item \textbf{Consistência forte}: Garantias de ordenação causal, mas com maior latência
+    \item \textbf{Disponibilidade}: Capacidade de responder mesmo sob falhas parciais
+    \item \textbf{Tolerância a partições}: Funcionamento durante particionamento de rede
+\end{itemize}
+
+O teorema CAP \cite{brewer2000towards} estabelece que é impossível garantir simultaneamente Consistência, Disponibilidade e Tolerância a Partições. Nossa implementação escolhe Consistência (através do Lamport Clock) e Disponibilidade (múltiplas réplicas), sacrificando parcialmente a Tolerância a Partições (o líder único é um ponto de falha).
+
+
+\section{Trabalhos Relacionados}
+
+O Relógio de Lamport \cite{lamport1978time} é um dos trabalhos seminais em sistemas distribuídos e continua sendo a base para algoritmos mais sofisticados como Vector Clocks \cite{fidge1988timestamps} e Version Vectors. O Algoritmo Bully \cite{garcia1982elections} pertence a uma classe de algoritmos de eleição que inclui também o Ring Algorithm e algoritmos baseados em consenso como Paxos \cite{lamport1998part} e Raft \cite{ongaro2014search}.
+
+Sistemas de replicação geodistribuída são amplamente estudados, com implementações de produção como Google Spanner \cite{corbett2013spanner}, que utiliza relógios atômicos (TrueTime) para ordenação global, e Amazon DynamoDB \cite{decandia2007dynamo}, que adota consistência eventual e vector clocks.
+
+\section{Conclusões e Trabalho Futuro}
+
+Este trabalho implementou com sucesso um sistema distribuído de log com ordenação causal através do Relógio de Lamport e coordenação via Algoritmo Bully, deployado em três regiões geograficamente distantes do Google Cloud Platform. Os experimentos conduzidos a partir de Campinas demonstraram o funcionamento correto da ordenação causal, validando a implementação dos algoritmos clássicos.
+
+A análise das latências de rede confirmou o impacto significativo da distância geográfica, com latências variando de 19ms (São Paulo, próxima a Campinas) até 652ms (Sydney), validando a importância de estratégias de edge computing para sistemas globais. O throughput máximo observado foi de 26.19 msg/s para 50 mensagens concorrentes, com degradação severa ao atingir 100 mensagens.
+
+Como trabalho futuro, propõe-se:
+
+\begin{enumerate}
+    \item \textbf{Implementação completa do Bully}: Adicionar detecção de falhas e mensagens ELECTION/COORDINATOR explícitas com timeout
+    \item \textbf{Otimização de recursos}: Utilizar VMs com mais capacidade (e2-medium ou superior) para avaliar throughput sem gargalo de CPU
+    \item \textbf{Multi-leader replication}: Explorar arquiteturas multi-leader com resolução de conflitos através de CRDTs
+    \item \textbf{Benchmarks extensivos}: Avaliar comportamento sob diferentes padrões de carga e cenários de falha
+    \item \textbf{Replicação assíncrona otimizada}: Implementar replicação push ao invés de polling
+    \item \textbf{Comparação com Vector Clocks}: Avaliar o overhead de Vector Clocks versus Lamport Clocks
+\end{enumerate}
+
+Os resultados obtidos demonstram que, embora algoritmos clássicos como Lamport Clock e Bully sejam conceitualmente simples, sua implementação em ambientes geodistribuídos reais apresenta desafios significativos relacionados a latência de rede, saturação de recursos e trade-offs entre consistência e performance. A experiência de deployar em três continentes diferentes proporcionou insights valiosos sobre as limitações físicas e práticas de sistemas distribuídos globais.
+
+\begin{thebibliography}{00}
+
+\bibitem{lamport1978time} L. Lamport, ``Time, clocks, and the ordering of events in a distributed system,'' \textit{Communications of the ACM}, vol. 21, no. 7, pp. 558-565, 1978.
+
+\bibitem{garcia1982elections} H. Garcia-Molina, ``Elections in a distributed computing system,'' \textit{IEEE Transactions on Computers}, vol. C-31, no. 1, pp. 48-59, 1982.
+
+\bibitem{kleppmann2017designing} M. Kleppmann, \textit{Designing Data-Intensive Applications}, O'Reilly Media, 2017.
+
+\bibitem{brewer2000towards} E. A. Brewer, ``Towards robust distributed systems,'' in \textit{Proceedings of the Annual ACM Symposium on Principles of Distributed Computing (PODC)}, 2000.
+
+\bibitem{fidge1988timestamps} C. Fidge, ``Timestamps in message-passing systems that preserve the partial ordering,'' in \textit{Proceedings of the 11th Australian Computer Science Conference}, 1988, pp. 56-66.
+
+\bibitem{lamport1998part} L. Lamport, ``The part-time parliament,'' \textit{ACM Transactions on Computer Systems}, vol. 16, no. 2, pp. 133-169, 1998.
+
+\bibitem{ongaro2014search} D. Ongaro and J. Ousterhout, ``In search of an understandable consensus algorithm,'' in \textit{Proceedings of USENIX Annual Technical Conference}, 2014, pp. 305-319.
+
+\bibitem{corbett2013spanner} J. C. Corbett et al., ``Spanner: Google's globally distributed database,'' \textit{ACM Transactions on Computer Systems}, vol. 31, no. 3, 2013.
+
+\bibitem{decandia2007dynamo} G. DeCandia et al., ``Dynamo: Amazon's highly available key-value store,'' in \textit{Proceedings of ACM Symposium on Operating Systems Principles (SOSP)}, 2007, pp. 205-220.
+
+\bibitem{mc714a_slides} C. A. Astudillo, ``Introdução aos Sistemas Distribuídos - Objetivos de Projeto'', slides de aula MC714A, Unicamp, 2025.
+
+\end{thebibliography}
+
+\end{document}

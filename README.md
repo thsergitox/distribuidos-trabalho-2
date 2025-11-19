@@ -122,25 +122,106 @@ Para más detalles, consulta:
 ### Scripts de Monitoreo (`scripts/monitoring/`)
 - `watch-messages.sh <num>` - Monitorear mensajes en tiempo real
 
-## 🎬 Para Grabar el Video
+## 🎬 Roteiro para o Vídeo de Demonstração (5 minutos)
 
-1. Ejecuta el deployment en GCP
-2. Abre 3 pestañas del navegador con los 3 dashboards
-3. Envía mensajes desde diferentes nodos
-4. Muestra cómo se replican automáticamente
-5. Muestra los Lamport timestamps ordenados
-6. Simula fallo del líder (opcional)
+### Preparação
+
+1. **Verificar deployment em GCP:**
+```bash
+export GCP_PROJECT_ID="trabalho2-477920"
+./scripts/gcp/check-gcp-status.sh
+```
+
+2. **Abrir dashboards nos navegadores:**
+```bash
+# URLs dos dashboards (substitua com suas IPs)
+http://34.55.87.209/dashboard    # Iowa (us-central1-a)
+http://34.95.212.100/dashboard   # São Paulo (southamerica-east1-a)
+http://35.201.29.184/dashboard   # Sydney (australia-southeast1-a)
+```
+
+### Roteiro de Demonstração
+
+**Minuto 0-1: Introdução e Arquitetura**
+- Apresentar o projeto: Sistema de log distribuído com Lamport Clock + Bully
+- Mostrar os 3 nodos deployados em regiões geográficas distintas
+- Explicar: 3 VMs em Iowa (EUA), São Paulo (Brasil), Sydney (Austrália)
+- Total: ~36.000 km de separação
+
+**Minuto 1-2: Algoritmo Bully - Eleição de Líder**
+- Mostrar nos dashboards qual nodo é o líder atual (Node 3 - Sydney, ID 8003)
+- Explicar: "O nodo com maior ID é eleito líder automaticamente"
+- Mostrar comando para verificar líder:
+```bash
+curl http://34.55.87.209/leader  # Retorna 8003
+```
+
+**Minuto 2-4: Relógio de Lamport - Ordenação Causal**
+- Enviar mensagens concorrentes de diferentes regiões:
+```bash
+# Terminal 1 - Iowa
+curl -X POST "http://34.55.87.209/?message=Mensagem_Iowa_1"
+
+# Terminal 2 - São Paulo
+curl -X POST "http://34.95.212.100/?message=Mensagem_Brasil_1"
+
+# Terminal 3 - Sydney (Líder)
+curl -X POST "http://35.201.29.184/?message=Mensagem_Sydney_1"
+```
+
+- Mostrar nos dashboards:
+  - Lamport timestamps incrementando (time: 1, 2, 3, ...)
+  - Mensagens aparecendo em ordem causal
+  - Replicação entre todos os nodos
+
+- Enviar carga de teste:
+```bash
+./scripts/gcp/test-gcp-system.sh
+```
+
+- Mostrar métricas:
+  - Throughput: ~27 msg/s
+  - Latências: 19ms (SP), 294ms (Iowa), 652ms (Sydney)
+
+**Minuto 4-5: Resultados e Conclusão**
+- Mostrar dashboard com mensagens replicadas consistentemente
+- Destacar Lamport timestamps preservando ordem causal
+- Explicar limitações: saturação em 100 mensagens, single-leader
+- Mencionar trabalho futuro: multi-leader, tolerância a falhas
+
+### Comandos Úteis para Demonstração
 
 ```bash
-# URLs del dashboard (reemplaza con tus IPs)
-http://34.55.87.209/dashboard    # Iowa
-http://34.95.212.100/dashboard   # São Paulo
-http://35.201.29.184/dashboard   # Sydney
+# Ver mensagens em um nodo
+curl http://34.55.87.209/messages | jq
+
+# Ver Lamport time atual
+curl http://34.55.87.209/lamport_time
+
+# Enviar 10 mensagens concorrentes
+for i in {1..10}; do
+  curl -X POST "http://35.201.29.184/?message=Teste_$i" &
+done
+
+# Executar suite completa de testes
+./scripts/gcp/test-gcp-system.sh
+
+# Coletar métricas detalhadas
+./scripts/gcp/collect-metrics.sh
 ```
+
+### Dicas para Gravação
+
+- ✅ Ambos os integrantes devem participar do vídeo
+- ✅ Mostrar código-fonte brevemente (main.py, lamport_clock.py)
+- ✅ Demonstrar funcionamento prático no GCP
+- ✅ Explicar por que as latências são diferentes (distância geográfica)
+- ✅ Mostrar consistência: mesmos dados em todos os nodos
 
 ## 👥 Autores
 
 - Sergio Sebastian Pezo Jimenez - RA: 298813
+- José Victor Santana Barbosa - RA: 245511
 
 Projeto desenvolvido para a disciplina **MC714 - Sistemas Distribuídos**, Unicamp, 2º Semestre de 2025.
 
