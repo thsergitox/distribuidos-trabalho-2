@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1763529691.70678 "/home/sergio/Documents/unicamp/d/distribuidos-trabalho-2/relatorio/relatorio.tex" "relatorio.pdf" "relatorio" 1763529692.04005 2
-  "/home/sergio/Documents/unicamp/d/distribuidos-trabalho-2/relatorio/relatorio.tex" 1763529352.57187 21111 1b5557560f424bb7f3e51ab253ce9ef6 ""
+["pdflatex"] 1763575822.32353 "/home/sergio/Documents/unicamp/d/distribuidos-trabalho-2/relatorio/relatorio.tex" "relatorio.pdf" "relatorio" 1763575823.47113 2
+  "/home/sergio/Documents/unicamp/d/distribuidos-trabalho-2/relatorio/relatorio.tex" 1763575819.96857 20865 a17f27977ff1e55993140f7264d1c2b0 ""
   "/usr/share/texmf-dist/fonts/enc/dvips/base/8r.enc" 1755987285 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texmf-dist/fonts/map/fontname/texfonts.map" 1755987285 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1755987285 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -97,8 +97,10 @@
   "/usr/share/texmf-dist/web2c/texmf.cnf" 1755987285 42087 b0f9697c952c8f5a8eede4134282cb0d ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1763505807 5311557 9da84c45f5b388655502706482323571 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1763505763 2030641 cc0a14d65f802fc6fe123afb5179c453 ""
-  "relatorio.aux" 1763529691.97617 4013 568d6c2d00fd62024931a31fc7e83706 "pdflatex"
-  "relatorio.tex" 1763529352.57187 21111 1b5557560f424bb7f3e51ab253ce9ef6 ""
+  "arquitetura.png" 0 -1 0 ""
+  "metricas.png" 0 -1 0 ""
+  "relatorio.aux" 1763575823.26152 4287 63d66eda056551780e1cca83cdac262d "pdflatex"
+  "relatorio.tex" 1763575819.96857 20865 a17f27977ff1e55993140f7264d1c2b0 ""
   (generated)
   "relatorio.aux"
   "relatorio.log"

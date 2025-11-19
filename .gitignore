@@ -59,3 +59,16 @@ logs/
 /ggrpc/
 /vgrpc/
 /protos/
+
+# Roteiro de vídeo (não commitar)
+ROTEIRO_VIDEO_DETALHADO.md
+
+# Relatório e figuras geradas
+relatorio/*.png
+relatorio/*.pdf
+relatorio/*.aux
+relatorio/*.bbl
+relatorio/*.blg
+relatorio/*.log
+relatorio/*.out
+relatorio/*.synctex.gz

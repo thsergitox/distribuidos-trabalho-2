@@ -1,1 +1,12 @@
 .venv
+
+# Relatório e figuras
+relatorio/
+*.png
+*.pdf
+*.tex
+*.aux
+*.bbl
+*.blg
+*.log
+*.out

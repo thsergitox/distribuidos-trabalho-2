@@ -145,17 +145,17 @@ async def post(message: str):
 
         if leader_srv is None:
             print(f"[Node {my_id}] ERROR: No leader available!")
-            return {"error": "No leader available"}, 503
+            return {"error": "No leader available"}
 
         # Forward ao líder
         url = f"{leader_srv.url()}/?message={message}"
         try:
-            response = requests.post(url, json={"message": message}, timeout=2)
+            response = requests.post(url, timeout=10)
             print(f"[Node {my_id}] Forwarded to leader, response: {response.status_code}")
             return response.json()
         except Exception as e:
             print(f"[Node {my_id}] ERROR: Leader not reachable: {e}")
-            return {"error": "Leader not reachable"}, 503
+            return {"error": "Leader not reachable"}
 
     # PASSO 2: Sou o líder, criar mensagem
     global messages
@@ -180,7 +180,7 @@ async def post(message: str):
         if server.id and server.id != my_id:
             url = f"{server.url()}/message_received"
             try:
-                result = requests.post(url, json={"content": message, "id": id}, timeout=2)
+                result = requests.post(url, json=new_msg.dict(), timeout=2)
                 print(f"[Node {my_id}] ✓ Replicated message {id} to node {server.id}")
             except Exception as e:
                 print(f"[Node {my_id}] ✗ Failed to replicate to node {server.id}: {e}")
@@ -270,10 +270,35 @@ def get_leader():
     return leader 
 
 @app.get("/leader_selected")
-def leader_selected(sleader = int):
+def leader_selected(sleader: int):
     global leader
-    print(f"Leader selected: {sleader}")
+    print(f"[Node {my_id}] Leader selected: {sleader}")
     leader = sleader
+    return {"status": "ok", "leader": leader}
+
+@app.post("/election")
+def election_message():
+    """
+    Endpoint para receber mensagem ELECTION do algoritmo Bully
+
+    Responde com OK e inicia própria eleição se receber ELECTION
+    """
+    print(f"[Node {my_id}] Received ELECTION message, responding OK and starting own election")
+    # Iniciar própria eleição em background
+    threading.Thread(target=start_election, daemon=True).start()
+    return {"status": "ok"}
+
+@app.post("/coordinator")
+def coordinator_message(new_leader: int):
+    """
+    Endpoint para receber mensagem COORDINATOR do algoritmo Bully
+
+    Aceita o novo líder anunciado
+    """
+    global leader
+    print(f"[Node {my_id}] Received COORDINATOR message, new leader is {new_leader}")
+    leader = new_leader
+    return {"status": "ok"}
 
 
 def check_leader():
@@ -314,38 +339,56 @@ def check_leader():
                 leader = cleader
 
         time.sleep(5)
-def spread_chose():
-    for server in servers:
-        if server.id and server.id != my_id:
-            url = f"{server.url()}/leader_selected?sleader={leader}"
-            try:
-                requests.get(url, timeout=2)
-            except:
-                pass
 def start_election():
+    """
+    Implementação do Algoritmo Bully para eleição de líder
+
+    Passos:
+    1. Enviar mensagem ELECTION para todos os nodos com ID maior
+    2. Esperar respostas OK
+    3. Se alguém responder OK → esperar mensagem COORDINATOR
+    4. Se ninguém responder OK → me declarar líder e enviar COORDINATOR para todos
+    """
     global leader
-    while True:
-        #print("in election")
-        leader_selected = False
+    print(f"[Node {my_id}] Starting Bully election...")
+
+    # PASSO 1: Enviar ELECTION para nodos com ID maior
+    received_ok = False
+    for server in servers:
+        if server.id and server.id > my_id:
+            url = f"{server.url()}/election"
+            try:
+                response = requests.post(url, timeout=2)
+                if response.status_code == 200:
+                    print(f"[Node {my_id}] Received OK from node {server.id}")
+                    received_ok = True
+            except Exception as e:
+                print(f"[Node {my_id}] Node {server.id} did not respond to ELECTION: {e}")
+
+    # PASSO 2: Decidir se sou o líder
+    if received_ok:
+        # Alguém com ID maior respondeu, vou esperar COORDINATOR
+        print(f"[Node {my_id}] Waiting for COORDINATOR message from higher node...")
+        # O líder será definido quando receber POST /coordinator
+        time.sleep(3)  # Timeout para esperar COORDINATOR
+        if leader is None or leader < my_id:
+            # Não recebi COORDINATOR, reiniciar eleição
+            print(f"[Node {my_id}] Did not receive COORDINATOR, restarting election...")
+            start_election()
+    else:
+        # Ninguém respondeu, EU sou o líder
+        leader = my_id
+        print(f"[Node {my_id}] I am the new leader! Broadcasting COORDINATOR...")
+
+        # PASSO 3: Enviar COORDINATOR para todos os nodos
         for server in servers:
-            if server.id and server.id > my_id:
-                url = f"{server.url()}/leader"
-                #print(url)
-                
+            if server.id and server.id != my_id:
+                url = f"{server.url()}/coordinator?new_leader={my_id}"
                 try:
-                    result = requests.get(url, timeout=2)
-                    leader = int(result.text.strip('"'))
-                    leader_selected = True
-                    spread_chose()
-                    return
-                except:
-                    pass
-        if not leader_selected:
-            leader = my_id
-            #print(f"I am the leader now: {leader}")
-            spread_chose()
-            return
-        time.sleep(0.5)
+                    requests.post(url, timeout=2)
+                    print(f"[Node {my_id}] Sent COORDINATOR to node {server.id}")
+                except Exception as e:
+                    print(f"[Node {my_id}] Failed to send COORDINATOR to node {server.id}: {e}")
 @app.get("/kill")
 def kill():
     import os
