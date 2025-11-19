@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Docker
+*.tar
+
+# GCP
+.gcp/
+*.json
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+/tmp/
+*.tmp
+
+# Legacy (ya movidos a legacy/)
+/grpc_server.py
+/health.py
+/health.sh
+
+# Generated protobuf (legacy)
+/ggrpc/
+/vgrpc/
+/protos/

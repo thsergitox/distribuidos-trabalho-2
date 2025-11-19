@@ -7,7 +7,7 @@
 chmod +x *.sh
 
 # 2. Iniciar cluster local
-./test-local.sh
+./scripts/local/test-local.sh
 
 # 3. Esperar 10 segundos
 sleep 10
@@ -19,7 +19,7 @@ curl -X POST 'http://localhost:8001/?message=Test_Local'
 curl http://localhost:8001/messages
 
 # 5. Detener
-./stop-local.sh
+./scripts/local/stop-local.sh
 ```
 
 ### 🎨 Dashboard Web
@@ -53,13 +53,13 @@ export GCP_PROJECT_ID="trabalho2-477920"
 gcloud config set project $GCP_PROJECT_ID
 
 # 2. Deploy completo (toma ~5 minutos)
-./deploy-gcp.sh
+./scripts/gcp/deploy-gcp.sh
 
 # 3. IMPORTANTE: Re-deploy de contenedores con IPs correctas
-./redeploy-containers.sh
+./scripts/gcp/redeploy-containers.sh
 
 # 4. Verificar estado
-./check-gcp-status.sh
+./scripts/gcp/check-gcp-status.sh
 ```
 
 ### Si ya tienes las VMs creadas
@@ -67,7 +67,7 @@ gcloud config set project $GCP_PROJECT_ID
 ```bash
 # Solo re-deployar contenedores
 export GCP_PROJECT_ID="trabalho2-477920"
-./redeploy-containers.sh
+./scripts/gcp/redeploy-containers.sh
 ```
 
 ## 🎨 Ver Dashboard en GCP
@@ -92,7 +92,7 @@ http://35.201.29.184/dashboard   # Node 3 - Sydney
 
 ```bash
 # Obtener IPs
-./check-gcp-status.sh
+./scripts/gcp/check-gcp-status.sh
 
 # Variables de ejemplo (reemplaza con las IPs reales)
 IP1="34.55.87.209"    # Iowa
@@ -124,9 +124,9 @@ curl http://$IP3/leader
 
 ```bash
 # Ver logs de un nodo específico
-./debug-node.sh 1   # Iowa
-./debug-node.sh 2   # São Paulo
-./debug-node.sh 3   # Sydney
+./scripts/gcp/debug-node.sh 1   # Iowa
+./scripts/gcp/debug-node.sh 2   # São Paulo
+./scripts/gcp/debug-node.sh 3   # Sydney
 
 # SSH a una VM
 gcloud compute ssh log-node-1 --zone=us-central1-a
@@ -145,7 +145,7 @@ gcloud compute ssh log-node-1 --zone=us-central1-a \
 ```bash
 # Destruir toda la infraestructura
 export GCP_PROJECT_ID="trabalho2-477920"
-./destroy-gcp.sh
+./scripts/gcp/destroy-gcp.sh
 ```
 
 ## Troubleshooting
@@ -154,14 +154,14 @@ export GCP_PROJECT_ID="trabalho2-477920"
 
 ```bash
 # Solución: Re-deployar contenedores
-./redeploy-containers.sh
+./scripts/gcp/redeploy-containers.sh
 ```
 
 ### Problema: Node 3 (Sydney) no responde
 
 ```bash
 # Ver qué está pasando
-./debug-node.sh 3
+./scripts/gcp/debug-node.sh 3
 
 # Si es problema de startup, esperar 2-3 minutos más
 # O SSH manualmente y reiniciar contenedor
@@ -175,7 +175,7 @@ docker logs distributed-log
 ```bash
 # Esto significa que OTHER_SERVERS no está configurado
 # Solución:
-./redeploy-containers.sh
+./scripts/gcp/redeploy-containers.sh
 ```
 
 ## Variables de Entorno Importantes
@@ -195,24 +195,24 @@ export OTHER_SERVERS="34.55.87.209:80:8001,34.95.212.100:80:8002,35.201.29.184:8
 
 ```bash
 # 1. Testing local primero
-./test-local.sh
+./scripts/local/test-local.sh
 sleep 10
-./test-send-messages.sh
-./stop-local.sh
+./scripts/local/test-send-messages.sh
+./scripts/local/stop-local.sh
 
 # 2. Deploy a GCP
 export GCP_PROJECT_ID="trabalho2-477920"
-./deploy-gcp.sh
-./redeploy-containers.sh
+./scripts/gcp/deploy-gcp.sh
+./scripts/gcp/redeploy-containers.sh
 
 # 3. Verificar
-./check-gcp-status.sh
+./scripts/gcp/check-gcp-status.sh
 
 # 4. Hacer tests para el video
 # (enviar mensajes, mostrar replicación, mostrar Lamport, etc.)
 
 # 5. Limpiar cuando termines
-./destroy-gcp.sh
+./scripts/gcp/destroy-gcp.sh
 ```
 
 ## Checklist del Proyecto
