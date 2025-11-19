@@ -1,5 +1,7 @@
 import random
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import threading
 import time
@@ -12,6 +14,13 @@ import server
 
 app = FastAPI()
 
+# Servir archivos estáticos (dashboard HTML)
+# El path es relativo al directorio de ejecución
+import pathlib
+static_path = pathlib.Path(__file__).parent / "static"
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
 # Obtener NODE_ID desde variable de entorno
 NODE_ID_ENV = os.getenv("NODE_ID")
 my_id = int(NODE_ID_ENV) if NODE_ID_ENV else None
@@ -20,13 +29,29 @@ my_id = int(NODE_ID_ENV) if NODE_ID_ENV else None
 lamport_clock = LamportClock()
 
 # Configurar lista de servidores basado en el entorno
-# En Docker, los nodos se llaman node1, node2, node3
-# En local, usar localhost
-KNOWN_NODES = [
-    {"host": "node1", "port": 80, "id": 8001},
-    {"host": "node2", "port": 80, "id": 8002},
-    {"host": "node3", "port": 80, "id": 8003},
-]
+# Prioridad: Variables de entorno > Docker names (default)
+# Variables de entorno para GCP:
+#   OTHER_SERVERS="34.55.87.209:80:8001,34.95.212.100:80:8002,35.201.29.184:80:8003"
+OTHER_SERVERS_ENV = os.getenv("OTHER_SERVERS")
+
+if OTHER_SERVERS_ENV:
+    # Parse formato: "ip1:port1:id1,ip2:port2:id2,ip3:port3:id3"
+    KNOWN_NODES = []
+    for server_str in OTHER_SERVERS_ENV.split(","):
+        parts = server_str.strip().split(":")
+        if len(parts) == 3:
+            KNOWN_NODES.append({
+                "host": parts[0],
+                "port": int(parts[1]),
+                "id": int(parts[2])
+            })
+else:
+    # Default para Docker local
+    KNOWN_NODES = [
+        {"host": "node1", "port": 80, "id": 8001},
+        {"host": "node2", "port": 80, "id": 8002},
+        {"host": "node3", "port": 80, "id": 8003},
+    ]
 
 servers = [
     Server(host=node["host"], port=node["port"], id=node["id"])
@@ -197,6 +222,19 @@ async def message_received(message: Message):
         "status": "ok",
         "local_lamport": local_lamport
     }
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    """
+    Endpoint para servir el dashboard HTML
+
+    Returns:
+        HTMLResponse: Dashboard interactivo
+    """
+    dashboard_path = pathlib.Path(__file__).parent / "static" / "dashboard.html"
+    with open(dashboard_path, "r") as f:
+        return HTMLResponse(content=f.read())
+
+
 @app.get("/state")
 async def state():
     """Retorna estado del nodo (ID, líder actual)"""

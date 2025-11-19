@@ -112,6 +112,23 @@ Ver el estado del nodo (ID, líder actual).
 curl http://localhost:8001/state
 ```
 
+#### `GET /dashboard`
+**🎨 Dashboard Web Interactivo** - La mejor forma de visualizar el sistema.
+```bash
+# En el navegador, abre:
+http://localhost:8001/dashboard
+http://localhost:8002/dashboard
+http://localhost:8003/dashboard
+```
+
+**Características:**
+- ✅ **Visualización en tiempo real** del estado de todos los nodos
+- ✅ **Enviar mensajes** directamente desde la interfaz
+- ✅ **Ver mensajes ordenados** por Lamport timestamp
+- ✅ **Auto-refresh** cada 3 segundos
+- ✅ **Indicador visual** del nodo líder (👑)
+- ✅ **Diseño responsive** perfecto para demos y videos 📹
+
 #### `GET /leader`
 Obtener el ID del líder actual.
 ```bash
@@ -122,6 +139,19 @@ curl http://localhost:8001/leader
 Health check del nodo.
 ```bash
 curl http://localhost:8001/health
+```
+
+#### `GET /lamport_time`
+Obtener el Lamport timestamp actual del nodo.
+```bash
+curl http://localhost:8001/lamport_time
+# Respuesta: {"time":5,"node_id":8001}
+```
+
+#### `GET /messages`
+Obtener todos los mensajes ordenados por Lamport timestamp.
+```bash
+curl http://localhost:8001/messages
 ```
 
 ### Endpoints Internos (Replicación)
@@ -195,87 +225,155 @@ wait
 
 ### Prerequisitos
 - Cuenta de Google Cloud Platform
-- `gcloud` CLI instalado
-- Proyecto GCP creado
+- `gcloud` CLI instalado y autenticado (`gcloud auth login`)
+- Proyecto GCP creado con billing habilitado
+- Docker instalado localmente
 
-### Pasos de Deployment
+### Opción 1: Deployment Automático (RECOMENDADO)
+
+**Script completo que hace todo:**
+
+```bash
+# 1. Configurar proyecto
+export GCP_PROJECT_ID="tu-proyecto-id"
+
+# 2. Ejecutar deployment automático
+./deploy-gcp.sh
+```
+
+Este script automáticamente:
+- ✅ Habilita APIs necesarias (Compute Engine, Artifact Registry, Container Registry)
+- ✅ Crea firewall rules
+- ✅ Build y push de imagen Docker a GCR
+- ✅ Crea 3 VMs en regiones distantes (Iowa, São Paulo, Sydney)
+- ✅ Instala Docker en cada VM
+- ✅ Inicia contenedores con configuración correcta
+
+**IMPORTANTE:** El primer deployment puede fallar en la comunicación entre nodos. Si esto ocurre, ejecuta:
+
+```bash
+# Re-deploy de contenedores con IPs correctas
+./redeploy-containers.sh
+```
+
+Este script:
+- Rebuild la imagen con el fix más reciente
+- Obtiene las IPs públicas de las VMs
+- Recrea los contenedores pasando `OTHER_SERVERS` con las IPs correctas
+
+### Opción 2: Deployment Manual Paso a Paso
 
 ```bash
 # 1. Configurar proyecto
 export GCP_PROJECT_ID="tu-proyecto-id"
 gcloud config set project $GCP_PROJECT_ID
 
-# 2. Build y push de imagen a GCR
-docker build -t gcr.io/$GCP_PROJECT_ID/distributed-log:latest .
-docker push gcr.io/$GCP_PROJECT_ID/distributed-log:latest
+# 2. Habilitar APIs necesarias
+gcloud services enable compute.googleapis.com
+gcloud services enable artifactregistry.googleapis.com
+gcloud services enable containerregistry.googleapis.com
 
-# 3. Crear VMs en 3 regiones diferentes
-# Región 1: us-central1 (Iowa, USA)
-gcloud compute instances create log-node-1 \
-  --zone=us-central1-a \
-  --machine-type=e2-micro \
-  --image-family=debian-11 \
-  --image-project=debian-cloud \
-  --boot-disk-size=20GB \
-  --tags=distributed-log,http-server \
-  --metadata=NODE_ID=8001
-
-# Región 2: europe-west1 (Belgium)
-gcloud compute instances create log-node-2 \
-  --zone=europe-west1-b \
-  --machine-type=e2-micro \
-  --image-family=debian-11 \
-  --image-project=debian-cloud \
-  --boot-disk-size=20GB \
-  --tags=distributed-log,http-server \
-  --metadata=NODE_ID=8002
-
-# Región 3: asia-east1 (Taiwan)
-gcloud compute instances create log-node-3 \
-  --zone=asia-east1-a \
-  --machine-type=e2-micro \
-  --image-family=debian-11 \
-  --image-project=debian-cloud \
-  --boot-disk-size=20GB \
-  --tags=distributed-log,http-server \
-  --metadata=NODE_ID=8003
-
-# 4. Configurar firewall
+# 3. Crear firewall rules
 gcloud compute firewall-rules create allow-distributed-log \
   --allow=tcp:80,tcp:443,tcp:8000-8100 \
   --target-tags=distributed-log
 
-# 5. SSH a cada VM y ejecutar el contenedor
-# (Ver sección "Deploy Manual en VM" más abajo)
+# 4. Build y push de imagen a GCR
+docker build -t gcr.io/$GCP_PROJECT_ID/distributed-log:latest .
+gcloud auth configure-docker
+docker push gcr.io/$GCP_PROJECT_ID/distributed-log:latest
+
+# 5. Crear VMs (esto toma 2-3 minutos)
+# Ver sección "Creación Manual de VMs" más abajo
+
+# 6. Una vez creadas las VMs, ejecutar redeploy
+./redeploy-containers.sh
 ```
 
-### Deploy Manual en VM
+### Verificar Deployment
+
+```bash
+# Ver estado de los nodos
+./check-gcp-status.sh
+```
+
+Deberías ver algo como:
+```
+log-node-1 (NODE_ID=8001)
+✓ HTTP responding
+  Lamport Time: {"time":0,"node_id":8001}
+  Leader ID: 8003  ← Todos deberían tener el mismo líder
+
+log-node-2 (NODE_ID=8002)
+✓ HTTP responding
+  Leader ID: 8003
+
+log-node-3 (NODE_ID=8003)
+✓ HTTP responding
+  Leader ID: 8003  ← Este es el líder (mayor ID)
+```
+
+### Scripts Disponibles para GCP
+
+| Script | Descripción |
+|--------|-------------|
+| `./deploy-gcp.sh` | Deployment inicial completo (crea VMs, firewall, etc.) |
+| `./redeploy-containers.sh` | Re-deployar solo los contenedores con nueva configuración |
+| `./check-gcp-status.sh` | Verificar estado de todos los nodos |
+| `./debug-node.sh <num>` | Ver logs detallados de un nodo específico (ej: `./debug-node.sh 3`) |
+| `./destroy-gcp.sh` | Eliminar toda la infraestructura de GCP |
+
+### Testing en GCP
+
+```bash
+# Obtener IPs de las VMs (ejecutar check-gcp-status.sh primero)
+# O manualmente:
+IP1="34.55.87.209"    # log-node-1 (Iowa)
+IP2="34.95.212.100"   # log-node-2 (São Paulo)
+IP3="35.201.29.184"   # log-node-3 (Sydney)
+
+# Enviar mensaje al líder (node 3)
+curl -X POST "http://$IP3/?message=Hello_from_Sydney"
+
+# Verificar que se replicó en todos los nodos
+curl http://$IP1/messages
+curl http://$IP2/messages
+curl http://$IP3/messages
+
+# Todos deberían mostrar el mismo mensaje con el mismo Lamport timestamp
+```
+
+### Deploy Manual en VM (Avanzado)
+
+Si necesitas deployar manualmente en una VM específica:
 
 ```bash
 # SSH a la VM
 gcloud compute ssh log-node-1 --zone=us-central1-a
 
-# Instalar Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+# Obtener IPs de TODAS las VMs primero
+# IP1=... IP2=... IP3=...
 
-# Autenticar con GCR
-gcloud auth configure-docker
+# Parar contenedor viejo
+docker stop distributed-log 2>/dev/null || true
+docker rm distributed-log 2>/dev/null || true
 
 # Pull imagen
+gcloud auth configure-docker
 docker pull gcr.io/$GCP_PROJECT_ID/distributed-log:latest
 
-# Ejecutar contenedor
+# Ejecutar contenedor con OTHER_SERVERS
 docker run -d \
   --name distributed-log \
   --restart unless-stopped \
   -p 80:80 \
   -e NODE_ID=8001 \
+  -e OTHER_SERVERS="$IP1:80:8001,$IP2:80:8002,$IP3:80:8003" \
   gcr.io/$GCP_PROJECT_ID/distributed-log:latest
 
 # Verificar
 docker ps
-docker logs distributed-log
+docker logs distributed-log --tail 50
 ```
 
 ## 📊 Estructura del Proyecto
@@ -295,6 +393,25 @@ docker logs distributed-log
 ```
 
 ## 🔧 Variables de Entorno
+
+| Variable  | Descripción                    | Ejemplo | Requerido |
+|-----------|--------------------------------|---------|-----------|
+| NODE_ID   | ID único del nodo              | 8001    | ✅ Sí     |
+| OTHER_SERVERS | IPs de otros nodos (GCP)   | 34.55.87.209:80:8001,... | Solo en GCP |
+
+**Formato de OTHER_SERVERS:**
+```
+ip1:puerto1:id1,ip2:puerto2:id2,ip3:puerto3:id3
+```
+
+**Ejemplo para GCP:**
+```bash
+OTHER_SERVERS="34.55.87.209:80:8001,34.95.212.100:80:8002,35.201.29.184:80:8003"
+```
+
+**Nota:** En Docker local, esta variable NO es necesaria. El sistema usa automáticamente los nombres de contenedores (node1, node2, node3).
+
+## 📋 Tabla Original de Variables
 
 | Variable  | Descripción                    | Ejemplo |
 |-----------|--------------------------------|---------|

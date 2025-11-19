@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Log System - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online {
+            background: #10b981;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+
+        .messages-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .messages-container h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .message-item {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .message-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .message-content {
+            color: #333;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .lamport-badge {
+            background: #667eea;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .node-badge {
+            background: #764ba2;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .send-message-form {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .send-message-form h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #f44;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            color: #c33;
+        }
+
+        .leader-badge {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 700;
+            display: inline-block;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Distributed Log System</h1>
+        <p class="subtitle">Lamport Clock + Bully Algorithm | Real-time Monitoring</p>
+
+        <!-- Node Status Cards -->
+        <div class="grid">
+            <div class="card">
+                <h2>
+                    <span class="status-indicator" id="status-1"></span>
+                    Node 1 - Iowa, USA
+                    <span id="leader-badge-1"></span>
+                </h2>
+                <div class="info-row">
+                    <span class="info-label">Node ID:</span>
+                    <span class="info-value">8001</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Lamport Time:</span>
+                    <span class="info-value" id="lamport-1">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Leader ID:</span>
+                    <span class="info-value" id="leader-1">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Messages:</span>
+                    <span class="info-value" id="msg-count-1">-</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>
+                    <span class="status-indicator" id="status-2"></span>
+                    Node 2 - São Paulo, Brasil
+                    <span id="leader-badge-2"></span>
+                </h2>
+                <div class="info-row">
+                    <span class="info-label">Node ID:</span>
+                    <span class="info-value">8002</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Lamport Time:</span>
+                    <span class="info-value" id="lamport-2">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Leader ID:</span>
+                    <span class="info-value" id="leader-2">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Messages:</span>
+                    <span class="info-value" id="msg-count-2">-</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>
+                    <span class="status-indicator" id="status-3"></span>
+                    Node 3 - Sydney, Australia
+                    <span id="leader-badge-3"></span>
+                </h2>
+                <div class="info-row">
+                    <span class="info-label">Node ID:</span>
+                    <span class="info-value">8003</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Lamport Time:</span>
+                    <span class="info-value" id="lamport-3">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Leader ID:</span>
+                    <span class="info-value" id="leader-3">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Messages:</span>
+                    <span class="info-value" id="msg-count-3">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Send Message Form -->
+        <div class="send-message-form">
+            <h2>📨 Send Message</h2>
+            <div class="form-group">
+                <input type="text" id="message-input" placeholder="Enter your message...">
+                <button onclick="sendMessage()">Send to Leader</button>
+            </div>
+            <div id="send-status"></div>
+        </div>
+
+        <!-- Messages Display -->
+        <div class="messages-container">
+            <h2>📋 Messages (Ordered by Lamport Timestamp)</h2>
+            <div id="messages-list">
+                <p style="color: #999; text-align: center;">Loading messages...</p>
+            </div>
+        </div>
+
+        <p class="refresh-info">⏱️ Auto-refresh every 3 seconds</p>
+    </div>
+
+    <script>
+        // Configuration - EDIT THIS WITH YOUR NODE IPS
+        const CURRENT_NODE = window.location.hostname;
+        const CURRENT_PORT = window.location.port || 80;
+        const BASE_URL = `http://${CURRENT_NODE}:${CURRENT_PORT}`;
+
+        // Update dashboard
+        async function updateDashboard() {
+            try {
+                // Get current node info
+                const lamportResp = await fetch(`${BASE_URL}/lamport_time`);
+                const lamportData = await lamportResp.json();
+
+                const leaderResp = await fetch(`${BASE_URL}/leader`);
+                const leaderData = await leaderResp.json();
+
+                const messagesResp = await fetch(`${BASE_URL}/messages`);
+                const messagesData = await messagesResp.json();
+
+                // Determine which node we are on
+                const currentNodeId = lamportData.node_id;
+                const nodeIndex = currentNodeId - 8000;
+
+                // Update current node's info
+                document.getElementById(`status-${nodeIndex}`).className = 'status-indicator status-online';
+                document.getElementById(`lamport-${nodeIndex}`).textContent = lamportData.time;
+                document.getElementById(`leader-${nodeIndex}`).textContent = leaderData;
+                document.getElementById(`msg-count-${nodeIndex}`).textContent = messagesData.length;
+
+                // Show leader badge
+                if (parseInt(leaderData) === currentNodeId) {
+                    document.getElementById(`leader-badge-${nodeIndex}`).innerHTML = '<span class="leader-badge">👑 LEADER</span>';
+                } else {
+                    document.getElementById(`leader-badge-${nodeIndex}`).innerHTML = '';
+                }
+
+                // Display messages
+                displayMessages(messagesData);
+
+            } catch (error) {
+                console.error('Error updating dashboard:', error);
+            }
+        }
+
+        function displayMessages(messages) {
+            const container = document.getElementById('messages-list');
+
+            if (messages.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No messages yet</p>';
+                return;
+            }
+
+            // Sort by Lamport timestamp
+            messages.sort((a, b) => a.lamport_timestamp - b.lamport_timestamp);
+
+            let html = '';
+            messages.forEach(msg => {
+                const date = new Date(msg.physical_timestamp * 1000);
+                const timeStr = date.toLocaleTimeString();
+
+                html += `
+                    <div class="message-item">
+                        <div class="message-header">
+                            <span>
+                                <span class="lamport-badge">Lamport: ${msg.lamport_timestamp}</span>
+                                <span class="node-badge">Node: ${msg.node_id}</span>
+                            </span>
+                            <span>${timeStr}</span>
+                        </div>
+                        <div class="message-content">${msg.content}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            const statusDiv = document.getElementById('send-status');
+
+            if (!message) {
+                statusDiv.innerHTML = '<div class="error-message">Please enter a message</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/?message=${encodeURIComponent(message)}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    statusDiv.innerHTML = `<div class="message-item" style="background: #d4edda; border-left-color: #28a745;">
+                        ✅ Message sent successfully! Lamport timestamp: ${data.lamport_timestamp}
+                    </div>`;
+                    input.value = '';
+
+                    // Refresh dashboard after 1 second
+                    setTimeout(updateDashboard, 1000);
+                } else {
+                    throw new Error('Failed to send message');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error-message">❌ Error sending message</div>';
+            }
+        }
+
+        // Allow Enter key to send message
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initial load
+        updateDashboard();
+
+        // Auto-refresh every 3 seconds
+        setInterval(updateDashboard, 3000);
+    </script>
+</body>
+</html>
