@@ -6,6 +6,7 @@ import time
 import requests
 import os
 from server import Server
+from lamport_clock import LamportClock
 import server
 
 
@@ -14,6 +15,9 @@ app = FastAPI()
 # Obtener NODE_ID desde variable de entorno
 NODE_ID_ENV = os.getenv("NODE_ID")
 my_id = int(NODE_ID_ENV) if NODE_ID_ENV else None
+
+# Inicializar Reloj Lógico de Lamport
+lamport_clock = LamportClock()
 
 # Configurar lista de servidores basado en el entorno
 # En Docker, los nodos se llaman node1, node2, node3
@@ -28,11 +32,35 @@ servers = [
     Server(host=node["host"], port=node["port"], id=node["id"])
     for node in KNOWN_NODES
 ]
+
+
 class Message(BaseModel):
+    """
+    Modelo de mensaje con soporte para Reloj Lógico de Lamport
+
+    Attributes:
+        id: ID único del mensaje (incremental)
+        content: Contenido del mensaje
+        lamport_timestamp: Timestamp lógico de Lamport
+        node_id: ID del nodo que creó el mensaje
+        physical_timestamp: Timestamp físico (time.time()) para debugging
+    """
     id: int
     content: str
+    lamport_timestamp: int
+    node_id: int
+    physical_timestamp: float
+
+
 messages = [
-    Message(id=1, content="Hello"),
+    # Mensaje inicial con timestamp Lamport = 0
+    Message(
+        id=1,
+        content="Hello",
+        lamport_timestamp=0,
+        node_id=my_id if my_id else 0,
+        physical_timestamp=time.time()
+    ),
 ]
 
 leader = None 
@@ -106,11 +134,21 @@ async def post(message: str):
 
     # PASO 2: Soy el líder, crear mensaje
     global messages
+
+    # IMPORTANTE: Incrementar reloj Lamport ANTES de crear el mensaje
+    lamport_time = lamport_clock.increment()
+
     id = max(msg.id for msg in messages) + 1
-    new_msg = Message(id=id, content=message)
+    new_msg = Message(
+        id=id,
+        content=message,
+        lamport_timestamp=lamport_time,
+        node_id=my_id,
+        physical_timestamp=time.time()
+    )
     messages.append(new_msg)
 
-    print(f"[Node {my_id}] Created message {id}, replicating to followers...")
+    print(f"[Node {my_id}] Created message {id} with Lamport timestamp {lamport_time}, replicating to followers...")
 
     # PASO 3: Replicar a todos los followers
     for server in servers:
@@ -126,14 +164,67 @@ async def post(message: str):
 
 @app.post("/message_received")
 async def message_received(message: Message):
+    """
+    Endpoint para recibir mensajes replicados desde el líder
+
+    Flujo:
+    1. Actualizar reloj Lamport con max(local, remote) + 1
+    2. Guardar mensaje
+    3. Ordenar mensajes por timestamp Lamport
+
+    Args:
+        message: Mensaje replicado con todos los campos Lamport
+
+    Returns:
+        dict: Status y timestamp Lamport local actualizado
+    """
     global messages, last_id
-    print(f"Received message {message.id} from leader")
+
+    # PASO 1: Actualizar reloj Lamport
+    local_lamport = lamport_clock.update(message.lamport_timestamp)
+
+    print(f"[Node {my_id}] Received message {message.id} from leader, "
+          f"Lamport: remote={message.lamport_timestamp}, local={local_lamport}")
+
+    # PASO 2: Guardar mensaje
     messages.append(message)
     last_id = max(msg.id for msg in messages)
-    return {"status": "ok"}
+
+    # PASO 3: Ordenar mensajes por Lamport (desempate por node_id)
+    messages.sort(key=lambda m: (m.lamport_timestamp, m.node_id))
+
+    return {
+        "status": "ok",
+        "local_lamport": local_lamport
+    }
 @app.get("/state")
 async def state():
-    return str(my_id) + " " + str(leader)   + str(leader_server())
+    """Retorna estado del nodo (ID, líder actual)"""
+    return str(my_id) + " " + str(leader) + str(leader_server())
+
+
+@app.get("/lamport_time")
+async def get_lamport_time():
+    """
+    Retorna el timestamp Lamport actual del nodo
+
+    Returns:
+        dict: Tiempo Lamport actual
+    """
+    return {"time": lamport_clock.get_time(), "node_id": my_id}
+
+
+@app.get("/messages")
+async def get_all_messages():
+    """
+    Retorna todos los mensajes ordenados por timestamp Lamport
+
+    Returns:
+        list: Lista de mensajes ordenados causalmente
+    """
+    # Ordenar por Lamport (ya deberían estar ordenados, pero por seguridad)
+    sorted_messages = sorted(messages, key=lambda m: (m.lamport_timestamp, m.node_id))
+    return sorted_messages
             
 
 @app.get("/leader")
