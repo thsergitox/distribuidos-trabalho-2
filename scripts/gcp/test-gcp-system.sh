@@ -172,4 +172,10 @@ echo -e "  Node 1: ${CYAN}http://$IP1/docs${NC}"
 echo -e "  Node 2: ${CYAN}http://$IP2/docs${NC}"
 echo -e "  Node 3: ${CYAN}http://$IP3/docs${NC}"
 
+
+echo -e "\n${BLUE}Dashboard:${NC}"
+echo -e "  Node 1: ${CYAN}http://$IP1/dashboard${NC}"
+echo -e "  Node 2: ${CYAN}http://$IP2/dashboard${NC}"
+echo -e "  Node 3: ${CYAN}http://$IP3/dashboard${NC}"
+
 echo -e "\n${GREEN}Testes completos! 🎉${NC}"

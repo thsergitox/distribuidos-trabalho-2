@@ -123,9 +123,64 @@ VM_NAMES=(log-node-1 log-node-2 log-node-3)
 
 # Eliminar VMs existentes si existen
 for vm_name in "${VM_NAMES[@]}"; do
-    echo "Checking if $vm_name exists..."
-    gcloud compute instances delete $vm_name --quiet 2>/dev/null || true
+    region="${REGIONS[${vm_name//log-node-/node}]}"
+    echo -e "Checking if $vm_name exists..."
+    if gcloud compute instances describe "$vm_name" --zone="$region" --quiet >/dev/null 2>&1; then
+        echo -e "Deleting $vm_name..."
+        gcloud compute instances delete "$vm_name" --zone="$region" --quiet
+    else
+        echo -e "$vm_name does not exist, skipping."
+    fi
 done
+
+echo -e "${GREEN}✓ Existing VMs deleted (if any)${NC}"
+echo -e "${YELLOW}Creating static IP addresses...${NC}"
+for i in {0..2}; do 
+    # Crear/guardar una IP estática por VM
+    vm_name="${VM_NAMES[$i]}"
+    zone="${REGIONS[node$((i+1))]}"
+    region="${zone%-*}"                    # ej. us-central1-a -> us-central1
+    addr_name="${vm_name}-address"
+
+    if gcloud compute addresses describe "$addr_name" --region="$region" --quiet >/dev/null 2>&1; then
+        echo -e "${YELLOW}Static address $addr_name already exists, skipping creation...${NC}"
+        address=$(gcloud compute addresses describe "$addr_name" --region="$region" --format='value(address)')
+        declare -A RESERVED_ADDRESSES 2>/dev/null || true
+        RESERVED_ADDRESSES["$vm_name"]="$address"
+        echo -e "${GREEN}✓ $addr_name -> $address${NC}"
+        continue
+    fi
+    echo -e "${BLUE}Creating static address $addr_name in region $region...${NC}"
+    gcloud compute addresses create "$addr_name" --region="$region" 
+
+    # Obtener la IP y guardarla en un arreglo asociativo
+    address=$(gcloud compute addresses describe "$addr_name" --region="$region" --format='value(address)')
+    declare -A RESERVED_ADDRESSES 2>/dev/null || true
+    RESERVED_ADDRESSES["$vm_name"]="$address"
+    echo -e "${GREEN}✓ $addr_name -> $address${NC}"
+
+done
+echo -e "${GREEN}✓ All static addresses created${NC}"
+echo "Reserved Addresses: ${RESERVED_ADDRESSES[@]}"
+
+# Build OTHER_SERVERS from RESERVED_ADDRESSES and NODE_IDS
+OTHER_SERVERS=""
+for i in "${!VM_NAMES[@]}"; do
+    vm_name="${VM_NAMES[$i]}"
+    ip="${RESERVED_ADDRESSES[$vm_name]}"
+    port="${NODE_IDS[$i]}"
+    if [ -z "$ip" ]; then
+        echo -e "${YELLOW}Warning: no reserved address for $vm_name${NC}"
+        continue
+    fi
+    entry="${ip}:80:${port}"
+    if [ -z "$OTHER_SERVERS" ]; then
+        OTHER_SERVERS="$entry"
+    else
+        OTHER_SERVERS="$OTHER_SERVERS,$entry"
+    fi
+done
+echo -e "${GREEN}✓ OTHER_SERVERS=${OTHER_SERVERS}${NC}"
 
 # Crear startup script
 cat > /tmp/startup-script.sh <<'EOF'
@@ -158,6 +213,7 @@ docker run -d \
   --restart unless-stopped \
   -p 80:80 \
   -e NODE_ID=NODE_ID_PLACEHOLDER \
+  -e OTHER_SERVERS='OTHER_SERVERS_PLACEHOLDER' \
   IMAGE_NAME_PLACEHOLDER
 
 echo "=== Setup complete ==="
@@ -169,11 +225,11 @@ for i in {0..2}; do
     vm_name="${VM_NAMES[$i]}"
     zone="${REGIONS[node$((i+1))]}"
     node_id="${NODE_IDS[$i]}"
-
+    address_name="${vm_name}-address"
     echo -e "${BLUE}Creating $vm_name in zone $zone (NODE_ID=$node_id)...${NC}"
 
     # Reemplazar placeholders en startup script
-    sed "s|IMAGE_NAME_PLACEHOLDER|$IMAGE_NAME|g; s|NODE_ID_PLACEHOLDER|$node_id|g" \
+    sed "s|IMAGE_NAME_PLACEHOLDER|$IMAGE_NAME|g; s|NODE_ID_PLACEHOLDER|$node_id|g; s|OTHER_SERVERS_PLACEHOLDER|$OTHER_SERVERS|g" \
         /tmp/startup-script.sh > /tmp/startup-$vm_name.sh
 
     # Crear VM
@@ -186,7 +242,8 @@ for i in {0..2}; do
         --boot-disk-type=pd-standard \
         --tags=distributed-log,http-server \
         --metadata-from-file=startup-script=/tmp/startup-$vm_name.sh \
-        --scopes=https://www.googleapis.com/auth/cloud-platform
+        --scopes=https://www.googleapis.com/auth/cloud-platform \
+        --address="$address_name"
 
     echo -e "${GREEN}✓ $vm_name created${NC}"
 done
